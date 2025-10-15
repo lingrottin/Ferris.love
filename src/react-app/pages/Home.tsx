@@ -1,4 +1,3 @@
-
 import { SiGithub } from "@icons-pack/react-simple-icons";
 import { Button } from "@/components/ui/button";
 
@@ -20,7 +19,14 @@ export default function Home() {
       <div className="mt-7 h-35 w-80 p-5 bg-orange-50 border-1 border-orange-200 rounded-xl">
         should be the example of the card
       </div>
-      <Button variant="outline" type="button" className="mt-7">
+      <Button
+        variant="outline"
+        type="button"
+        className="mt-7 cursor-pointer"
+        onClick={() => {
+          window.location.href = "/api/invoke-github-setup";
+        }}
+      >
         <SiGithub size={24} /> Connect with GitHub
       </Button>
     </div>
