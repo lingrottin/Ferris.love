@@ -9,10 +9,11 @@
     "ignoreUnknown": false,
     "includes": [
       "**",
+      "!.next",
       "!node_modules",
       "!dist",
       "!wrangler.json",
-      "!worker-configuration.d.ts"
+      "!cloudflare-env.d.ts"
     ]
   },
   "formatter": {

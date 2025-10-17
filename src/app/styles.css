@@ -1,11 +1,6 @@
-/* biome-ignore-all lint/suspicious/noUnknownAtRules: tailwind-specific */
-@import url("https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap");
+/* biome-ignore-all lint/suspicious/noUnknownAtRules: Tailwind specific */
 @import "tailwindcss";
 @import "tw-animate-css";
-
-:root {
-  font-family: "Roboto Flex", sans-serif;
-}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -80,6 +75,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --font-mono: var(--font-roboto-mono), "monospace";
+  --font-sans: var(--font-inter), "sans-serif";
 }
 
 .dark {
@@ -120,7 +117,6 @@
   * {
     @apply border-border outline-ring/50;
   }
-
   body {
     @apply bg-background text-foreground;
   }

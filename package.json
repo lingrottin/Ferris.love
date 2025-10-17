@@ -1,65 +1,39 @@
 {
-  "name": "vite-react-template",
-  "description": "A template for building a React application with Vite, Hono, and Cloudflare Workers",
+  "name": "my-next-app",
+  "version": "0.1.0",
   "private": true,
-  "cloudflare": {
-    "label": "Vite React Template",
-    "products": [
-      "Workers"
-    ],
-    "categories": [],
-    "preview_icon_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/532a5378-9717-4964-385b-5fafd2160200/public",
-    "preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/ec7f4be5-d1d6-4e94-0851-126341745400/preview",
-    "publish": true
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "types": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts"
   },
   "dependencies": {
-    "@auth/core": "^0.41.0",
     "@auth/d1-adapter": "^1.11.0",
-    "@hono/auth-js": "^1.1.0",
-    "@hono/trpc-server": "^0.4.0",
     "@icons-pack/react-simple-icons": "^13.8.0",
+    "@opennextjs/cloudflare": "^1.3.0",
     "@radix-ui/react-slot": "^1.2.3",
-    "@tailwindcss/vite": "^4.1.14",
-    "@tanstack/react-query": "^5.90.3",
-    "@trpc/client": "^11.0.0",
-    "@trpc/react-query": "^11.0.0",
-    "@trpc/server": "^11.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "hono": "^4.8.2",
-    "lucide-react": "^0.545.0",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "react-router-dom": "^7.0.0",
-    "simple-icons": "^15.16.1",
-    "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^4.1.14",
-    "zod": "^4.1.12"
+    "lucide-react": "^0.546.0",
+    "next": "15.5.6",
+    "next-auth": "5.0.0-beta.29",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.6",
-    "@cloudflare/vite-plugin": "1.13.13",
-    "@eslint/js": "9.29.0",
-    "@types/node": "24.0.4",
-    "@types/react": "19.0.10",
-    "@types/react-dom": "19.0.4",
-    "@vitejs/plugin-react": "5.0.0",
-    "cross-env": "^10.1.0",
-    "globals": "16.2.0",
+    "@biomejs/biome": "^2.2.6",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20.19.21",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
     "tw-animate-css": "^1.4.0",
-    "typescript": "5.8.3",
-    "vite": "^6.0.0",
-    "wrangler": "4.43.0"
-  },
-  "scripts": {
-    "build": "tsc -b && vite build",
-    "cf-typegen": "wrangler types",
-    "check": "tsc && vite build && wrangler deploy --dry-run",
-    "deploy": "wrangler deploy",
-    "dev": "cross-env CLOUDFLARE_ENV=dev vite",
-    "dev-host": "cross-env CLOUDFLARE_ENV=dev vite --host 0.0.0.0",
-    "lint": "biome check",
-    "preview": "npm run build && vite preview"
-  },
-  "type": "module"
+    "typescript": "^5",
+    "wrangler": "^4.43.0"
+  }
 }
