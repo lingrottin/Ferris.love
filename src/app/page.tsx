@@ -1,10 +1,10 @@
 import { SiGithub } from "@icons-pack/react-simple-icons";
 import Image from "next/image";
 import { signIn } from "@/auth";
+import { Banner } from "@/components/Banner";
 import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
-import {Banner} from "@/components/Banner";
-import {cn} from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export default async function Home({
   searchParams,
@@ -20,11 +20,7 @@ export default async function Home({
   return (
     <>
       <TopBar className={cn(error && "border-b-0")}></TopBar>
-      {error && (
-          <Banner>
-            {decodeURIComponent(message)}
-          </Banner>
-      )}
+      {error && <Banner>{decodeURIComponent(message)}</Banner>}
       <div className="flex flex-col items-center justify-center">
         <div className="pl-5 pr-5 text-center text-5xl/15 font-bold">
           <Image
@@ -54,7 +50,7 @@ export default async function Home({
             type="submit"
             className="mt-7 cursor-pointer"
           >
-            <SiGithub size={24} /> Connect with GitHub
+            <SiGithub size={24} /> Login with GitHub
           </Button>
         </form>
       </div>
