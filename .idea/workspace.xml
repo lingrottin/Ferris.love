@@ -6,16 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="1019fdcd-a718-4187-bb74-3a041c3ce4dd" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cloudflare-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/cloudflare-env.d.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pnpm-lock.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pnpm-lock.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/dashboard/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/Banner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Banner.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/dashboard/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/NavigationItem.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/NavigationItem.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/TopBar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/TopBar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/octokit.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/octokit.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,7 +25,7 @@
     <option name="directoryName" value="VBigcB1n" />
   </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="ProjectErrors" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
@@ -64,6 +60,7 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="G:\Ferris.love\src\app\dashboard\[slug]" />
       <recent name="G:\Ferris.love\src\app\fonts" />
       <recent name="G:\Ferris.love\src\app" />
     </key>
@@ -102,6 +99,7 @@
       <workItem from="1760677789144" duration="6061000" />
       <workItem from="1760714414962" duration="5220000" />
       <workItem from="1760807453172" duration="4329000" />
+      <workItem from="1760968399544" duration="12008000" />
     </task>
     <servers />
   </component>

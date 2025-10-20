@@ -21,7 +21,7 @@ export function TopBar(props: {
         </div>
       </div>
       {/* placeholder to push content down */}
-      <div className={"mb-20"}></div>
+      <div className={"h-20 w-full"}></div>
     </>
   );
 }
