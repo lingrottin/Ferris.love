@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 
 export default async function FallbackPage({
   searchParams,
-}:{
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const resolved = await searchParams;
 
@@ -17,6 +17,7 @@ export default async function FallbackPage({
     }
   }
 
-  const query = params.toString();  const target = query ? `/dashboard/main?${query}` : `/dashboard/main`;
+  const query = params.toString();
+  const target = query ? `/dashboard/main?${query}` : `/dashboard/main`;
   redirect(target);
 }

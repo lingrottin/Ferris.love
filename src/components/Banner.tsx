@@ -8,7 +8,7 @@ export function Banner(props: {
   const variant = props.variant || "warning";
   return (
     <div
-      className={cn("mt-7 text-center p-2 border-b-1 border-t-1 font-mono", {
+      className={cn("text-center p-2 border-b-1 border-t-1 font-mono", {
         "text-orange-600 border-orange-100 bg-orange-50": variant === "warning",
         "text-cyan-500 border-cyan-100 bg-cyan-50": variant === "note",
       })}
