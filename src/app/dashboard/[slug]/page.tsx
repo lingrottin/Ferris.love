@@ -11,10 +11,16 @@ import { NavigationItem } from "@/components/NavigationItem";
 import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
 import { getGithubInstallation } from "./util";
+import {StatsPage} from "@/app/dashboard/[slug]/stats_page";
 
-export default async function Dashboard() {
+export default async function Dashboard({
+                                          params,
+                                        }: {
+  params: Promise<{ slug: string }>
+}) {
   const { env } = await getCloudflareContext({ async: true });
   const session = await auth();
+  const { slug } = await params;
   // if user is not logged in, redirect to login page
   if (!session?.user) {
     return redirect(
@@ -106,14 +112,14 @@ export default async function Dashboard() {
             <NavigationItem
               href={"/dashboard/main"}
               icon={<Book></Book>}
-              active
+              active={slug==="main"}
             >
               Repositories
             </NavigationItem>
-            <NavigationItem href={"/dashboard/stats"} icon={<ChartArea />}>
+            <NavigationItem href={"/dashboard/stats"} icon={<ChartArea />} active={slug==="stats"}>
               Statistics
             </NavigationItem>
-            <NavigationItem href={"/dashboard/settings"} icon={<Settings />}>
+            <NavigationItem href={"/dashboard/settings"} icon={<Settings />} active={slug==="settings"}>
               Settings
             </NavigationItem>
           </div>
@@ -121,7 +127,8 @@ export default async function Dashboard() {
             className={"border-b-1 mt-3 mb-3 md:mb-0 md:mt-0 md:hidden"}
           ></div>
           <div className={"md:flex-2 xl:flex-3 md:pl-5 md:pr-5"}>
-            <MainPage installationId={installation}></MainPage>
+            {slug==="main" && <MainPage installationId={installation}></MainPage>}
+            {slug==="stats" && <StatsPage></StatsPage>}
           </div>
         </div>
       </div>

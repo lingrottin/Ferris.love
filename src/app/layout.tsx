@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./styles.css";
 import LocalFont from "next/font/local";
+import NextTopLoader from 'nextjs-toploader';
 
 export const metadata: Metadata = {
   title: "Ferris.love",
@@ -24,6 +25,16 @@ const _inter = LocalFont({
   ],
   variable: "--font-inter",
 });
+
+function TopLoader(){
+  "use client";
+  return(<NextTopLoader
+    showSpinner={false}
+    color={"#000000"}
+    shadow={false}
+  />)
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,7 +45,10 @@ export default function RootLayout({
       lang="en"
       className={`${_roboto_mono.variable} ${_inter.variable} antialiased`}
     >
-      <body>{children}</body>
+      <body>
+        <TopLoader/>
+        {children}
+      </body>
     </html>
   );
 }

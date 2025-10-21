@@ -36,7 +36,7 @@ export function MainPage({
             <EmptyTitle>Not installed</EmptyTitle>
             <EmptyDescription>
               You'll need to install the app on your GitHub account before you
-              can use Ferris.love{" "}
+              can use Ferris.love
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
