@@ -9,7 +9,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
   const { env } = getCloudflareContext();
   if ((await env.KV.get("root:auth:db_migrated")) !== "true") {
     try {
-      await up(env.DB);
+      await up(env.DB_AUTH);
       await env.KV.put("root:auth:db_migrated", "true");
     } catch (e) {
       console.error("Error migrating database:", e);
@@ -36,7 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
         },
       }),
     ],
-    adapter: D1Adapter(env.DB),
+    adapter: D1Adapter(env.DB_AUTH),
     callbacks: {
       async jwt({ token, user, profile }): Promise<JWT> {
         // Ensure token exists

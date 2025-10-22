@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import "./styles.css";
 import LocalFont from "next/font/local";
-import NextTopLoader from 'nextjs-toploader';
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { TopLoader } from "@/components/TopLoader";
 
 export const metadata: Metadata = {
   title: "Ferris.love",
@@ -26,15 +27,6 @@ const _inter = LocalFont({
   variable: "--font-inter",
 });
 
-function TopLoader(){
-  "use client";
-  return(<NextTopLoader
-    showSpinner={false}
-    color={"#000000"}
-    shadow={false}
-  />)
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,11 +35,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${_roboto_mono.variable} ${_inter.variable} antialiased`}
     >
-      <body>
-        <TopLoader/>
-        {children}
+      <body className={"bg-background text-foreground"}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TopLoader></TopLoader>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

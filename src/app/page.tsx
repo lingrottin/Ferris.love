@@ -36,7 +36,7 @@ export default async function Home({
             <span className="text-6xl font-black text-orange-600">Ferris</span>
           </span>
         </div>
-        <div className="mt-7 h-35 w-80 p-5 bg-orange-50 border-1 border-orange-200 rounded-xl">
+        <div className="mt-7 h-35 w-80 p-5 bg-orange-500/10 border-1 border-orange-500/10 rounded-xl">
           should be the example of the card
         </div>
         <form

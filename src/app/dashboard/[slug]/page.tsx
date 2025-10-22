@@ -5,18 +5,21 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Session } from "next-auth";
 import { MainPage } from "@/app/dashboard/[slug]/main_page";
+import { StatsPage } from "@/app/dashboard/[slug]/stats_page";
 import { auth, signOut } from "@/auth";
 import { Banner } from "@/components/Banner";
 import { NavigationItem } from "@/components/NavigationItem";
 import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
+import { SettingsPage } from "./settings_page";
 import { getGithubInstallation } from "./util";
-import {StatsPage} from "@/app/dashboard/[slug]/stats_page";
 
 export default async function Dashboard({
-                                          params,
-                                        }: {
-  params: Promise<{ slug: string }>
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { env } = await getCloudflareContext({ async: true });
   const session = await auth();
@@ -28,6 +31,19 @@ export default async function Dashboard({
         encodeURIComponent("You must be logged in to access the dashboard."),
     );
   }
+  let page = 0;
+  if (slug === "main") {
+    const pageParam = (await searchParams).page;
+    if (typeof pageParam === "string") page = parseInt(pageParam, 10);
+    else if (Array.isArray(pageParam) && pageParam.length > 0) {
+      page = parseInt(pageParam[0], 10);
+    } else {
+      page = 1;
+    }
+    if (Number.isNaN(page) || page < 1) {
+      page = 1;
+    }
+  }
   // Prefer GitHub login (unique username) if available, otherwise fall back to name
   const user = session.user as Session["user"] & { login?: string };
   const installation = await getGithubInstallation(
@@ -37,7 +53,7 @@ export default async function Dashboard({
   return (
     <>
       <TopBar title={"Dashboard"}>
-        <span>logged in as @{user.login || user.name}</span>
+        {/* <span>logged in as @{user.login || user.name}</span> */}
       </TopBar>
       {installation === null && (
         <Banner>
@@ -52,8 +68,10 @@ export default async function Dashboard({
         </Banner>
       )}
       <div className="flex flex-col md:ml-15 md:mr-15 xl:ml-50 xl:mr-50 ml-10 mr-10 mt-10 gap-5">
-        <div className={"flex flex-row"}>
-          <div className={"flex flex-row justify-center items-center flex-2"}>
+        <div className={"flex flex-col md:flex-row"}>
+          <div
+            className={"flex flex-row justify-center items-center md:flex-2"}
+          >
             <Image
               className={"w-15 h-15 rounded-full"}
               width={15}
@@ -72,7 +90,9 @@ export default async function Dashboard({
                     return (
                       <>
                         <span className={"font-bold"}>{user.name}</span>
-                        <span className={"font-medium ml-1 text-muted-foreground"}>
+                        <span
+                          className={"font-medium ml-1 text-muted-foreground"}
+                        >
                           (@{user.login})
                         </span>
                       </>
@@ -89,8 +109,9 @@ export default async function Dashboard({
               <span className={"pb-1"}>{user.email}</span>
             </div>
           </div>
-          <div className={"flex-1 items-center justify-end flex"}>
+          <div className={"md:flex-1 md:items-center md:justify-end flex"}>
             <form
+              className={"shrink w-full md:w-auto mt-1 md:mt-0"}
               action={async () => {
                 "use server";
                 await signOut();
@@ -99,7 +120,7 @@ export default async function Dashboard({
               <Button
                 variant="outline"
                 type="submit"
-                className="mt-7 cursor-pointer"
+                className="cursor-pointer w-full md:w-autp"
               >
                 Sign out
               </Button>
@@ -112,23 +133,34 @@ export default async function Dashboard({
             <NavigationItem
               href={"/dashboard/main"}
               icon={<Book></Book>}
-              active={slug==="main"}
+              active={slug === "main"}
             >
               Repositories
             </NavigationItem>
-            <NavigationItem href={"/dashboard/stats"} icon={<ChartArea />} active={slug==="stats"}>
+            <NavigationItem
+              href={"/dashboard/stats"}
+              icon={<ChartArea />}
+              active={slug === "stats"}
+            >
               Statistics
             </NavigationItem>
-            <NavigationItem href={"/dashboard/settings"} icon={<Settings />} active={slug==="settings"}>
+            <NavigationItem
+              href={"/dashboard/settings"}
+              icon={<Settings />}
+              active={slug === "settings"}
+            >
               Settings
             </NavigationItem>
           </div>
           <div
             className={"border-b-1 mt-3 mb-3 md:mb-0 md:mt-0 md:hidden"}
           ></div>
-          <div className={"md:flex-2 xl:flex-3 md:pl-5 md:pr-5"}>
-            {slug==="main" && <MainPage installationId={installation}></MainPage>}
-            {slug==="stats" && <StatsPage></StatsPage>}
+          <div className={"md:flex-2 xl:flex-3 md:ml-5"}>
+            {slug === "main" && (
+              <MainPage page={page} installationId={installation}></MainPage>
+            )}
+            {slug === "stats" && <StatsPage></StatsPage>}
+            {slug === "settings" && <SettingsPage></SettingsPage>}
           </div>
         </div>
       </div>

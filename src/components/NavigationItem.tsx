@@ -18,15 +18,15 @@ export function NavigationItem(props: {
       )}
     >
       <div
-        className={cn("mr-1 w-1 h-5", { "rounded-full bg-gray-400": active })}
+        className={cn("mr-1 w-1 h-5", { "rounded-full bg-foreground": active })}
       ></div>
-      <div className={"mr-2 text-gray-700"}>{props.icon}</div>
+      <div className={"mr-2 text-foreground"}>{props.icon}</div>
       <Link
         href={props.href}
         className={cn(
-          "block pl-2 pr-5 pt-2 pb-2 rounded-md w-full transition duration-200 hover:bg-gray-100",
+          "block pl-2 pr-5 pt-2 pb-2 rounded-md w-full transition duration-200 hover:bg-foreground/15",
           {
-            "font-medium bg-gray-50": active,
+            "font-medium bg-foreground/10": active,
           },
         )}
       >

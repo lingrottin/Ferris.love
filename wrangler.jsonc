@@ -28,9 +28,15 @@
    */
   "d1_databases": [
     {
-      "binding": "DB",
+      "binding": "DB_AUTH",
       "database_name": "db",
       "database_id": "db"
+    },
+    {
+      "binding": "DB",
+      "database_name": "db_drizzle",
+      "database_id": "db_drizzle",
+      "migrations_dir": "drizzle"
     }
   ],
   "kv_namespaces": [

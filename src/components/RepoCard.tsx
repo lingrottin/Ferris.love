@@ -12,18 +12,20 @@ export function RepoCard(props: {
     <Link
       href={`/dashboard/repo/${props.username}:${props.repo}`}
       className={cn(
-        "block rounded-xl border-1 p-5 cursor-pointer transition hover:shadow-xl",
+        "flex flex-col rounded-xl border-1 p-5 cursor-pointer transition dark:shadow-accent-foreground/10 dark:hover:bg-foreground/5 hover:shadow-xl overflow-x-hidden",
         props.className,
       )}
     >
       <div className={"text-lg mb-2"}>
-        {props.username}/<span className={"font-bold"}>{props.repo}</span>
+        {props.username} / <span className={"font-bold"}>{props.repo}</span>
       </div>
-      <div className={"text-sm"}>
-        Total LoRC: <span className={""}>{props.lorc}</span>
-      </div>
-      <div className={"text-sm text-gray-500"}>
-        Last updated {props.lastUpdated}
+      <div className={"mt-auto"}>
+        <div className={"text-sm"}>
+          Total LoRC: <span className={""}>{props.lorc}</span>
+        </div>
+        <div className={"text-sm text-gray-500"}>
+          Last updated {props.lastUpdated}
+        </div>
       </div>
     </Link>
   );
