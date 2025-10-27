@@ -1,80 +1,89 @@
 import { D1Adapter, up } from "@auth/d1-adapter";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import type { User as NextAuthUser, Session } from "next-auth";
-import NextAuth from "next-auth";
-import type { JWT } from "next-auth/jwt";
+import { eq, type InferSelectModel } from "drizzle-orm";
+import NextAuth, { type DefaultSession } from "next-auth";
 import GitHub from "next-auth/providers/github";
+import { users } from "@/db/schema";
+import { makeDb } from "@/db/util";
 
-export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
-  const { env } = getCloudflareContext();
-  if ((await env.KV.get("root:auth:db_migrated")) !== "true") {
+declare module "next-auth" {
+  interface Session {
+    user: {
+      db?: InferSelectModel<typeof users>;
+    } & DefaultSession["user"];
+  }
+}
+
+let _migrationChecked = false;
+let _migrationPromise: Promise<void> | null = null;
+
+async function ensureDbMigrated(env: CloudflareEnv): Promise<void> {
+  if (_migrationChecked) return;
+  if (_migrationPromise) return _migrationPromise;
+
+  _migrationPromise = (async () => {
     try {
-      await up(env.DB_AUTH);
-      await env.KV.put("root:auth:db_migrated", "true");
+      const v = await env.KV.get("root:auth:db_migrated");
+      if (v !== "true") {
+        await up(env.DB_AUTH);
+        await env.KV.put("root:auth:db_migrated", "true");
+      }
+      _migrationChecked = true;
     } catch (e) {
       console.error("Error migrating database:", e);
     }
-  }
+  })();
+
+  return _migrationPromise;
+}
+
+// biome-ignore lint/suspicious/noTsIgnore : idk why ts is mad
+// @ts-ignore
+export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
+  const { env } = getCloudflareContext();
+  await ensureDbMigrated(env);
+
   return {
-    session: {
-      strategy: "jwt",
-    },
-    providers: [
-      GitHub({
-        clientId: env.AUTH_GITHUB_ID,
-        clientSecret: env.AUTH_GITHUB_SECRET,
-        profile(profile) {
-          // Ensure login is preserved from GitHub profile
-          const mapped: Partial<NextAuthUser> & { login?: string } = {
-            id: String(profile.id),
-            name: profile.name ?? profile.login,
-            email: profile.email,
-            image: profile.avatar_url,
-            login: profile.login,
-          };
-          return mapped as unknown as NextAuthUser;
-        },
-      }),
-    ],
+    providers: [GitHub],
     adapter: D1Adapter(env.DB_AUTH),
     callbacks: {
-      async jwt({ token, user, profile }): Promise<JWT> {
-        // Ensure token exists
-        if (!token) token = {} as JWT;
-        // Persist GitHub login from profile into token (defensive)
-        const profileLogin = (profile as unknown as { login?: string })?.login;
-        if (typeof profileLogin === "string" && profileLogin.length > 0) {
-          (token as JWT & { login?: string }).login = profileLogin;
-        }
-        // Also persist from user if present (database row)
-        const userLogin = (user as NextAuthUser & { login?: string })?.login;
-        if (typeof userLogin === "string" && userLogin.length > 0) {
-          (token as JWT & { login?: string }).login = userLogin;
-        }
-        return token;
-      },
-      async session({ session, token, user }) {
-        try {
-          const userLogin = (user as NextAuthUser & { login?: string })?.login;
-          const tokenLogin = (token as JWT & { login?: string })?.login;
-          const login =
-            typeof userLogin === "string" && userLogin.length > 0
-              ? userLogin
-              : tokenLogin;
-          if (login && login.length > 0) {
-            if (!session) return {} as Session;
-            if (!session.user) {
-              (session as Session).user = {
-                name: undefined,
-                email: undefined,
-              } as unknown as Session["user"];
-            }
-            (session as Session).user.login = login;
+      async signIn({ profile, user }) {
+        if (!profile) return false;
+        const db = await makeDb();
+        const u = await db
+          .select()
+          .from(users)
+          .where(eq(users.authId, user.id ?? ""));
+        if (u.length === 0) {
+          //biome-ignore-start lint/style/noNonNullAssertion: they exist!
+          const v = {
+            githubId: profile.id!,
+            authId: user.id || "",
+            // there is a mysterious problem that TypeScript assumes profile.login as {}
+            // but it is a number
+            login: (profile.login! as unknown as number).toString(10),
+          };
+          //biome-ignore-end lint/style/noNonNullAssertion: why an end statement should have an explanation???
+          try {
+            await db.insert(users).values(v);
+          } catch (e) {
+            console.log(e);
           }
-        } catch (e) {
-          console.warn("session callback: error while setting login", e);
         }
-        return session;
+        return true;
+      },
+      async session({ session }) {
+        const db = await makeDb();
+        const u = await db
+          .select()
+          .from(users)
+          .where(eq(users.authId, session.user.id ?? ""));
+        if (u.length === 0) {
+          return session;
+        }
+        const s = session;
+        s.user.db = u[0];
+        return s;
       },
     },
   };

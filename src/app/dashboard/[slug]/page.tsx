@@ -19,11 +19,10 @@ export default async function Dashboard({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: Promise<{ [_: string]: string | string[] | undefined }>;
 }) {
   const { env } = await getCloudflareContext({ async: true });
   const session = await auth();
-  const { slug } = await params;
   // if user is not logged in, redirect to login page
   if (!session?.user) {
     return redirect(
@@ -32,6 +31,7 @@ export default async function Dashboard({
     );
   }
   let page = 0;
+  const { slug } = await params;
   if (slug === "main") {
     const pageParam = (await searchParams).page;
     if (typeof pageParam === "string") page = parseInt(pageParam, 10);
@@ -47,7 +47,7 @@ export default async function Dashboard({
   // Prefer GitHub login (unique username) if available, otherwise fall back to name
   const user = session.user as Session["user"] & { login?: string };
   const installation = await getGithubInstallation(
-    user.login || user.name || "",
+    user.db?.login || user.name || "",
   );
 
   return (
@@ -86,21 +86,21 @@ export default async function Dashboard({
             >
               <div className={"text-lg"}>
                 {(() => {
-                  if (user.login && user.login !== user.name) {
+                  if (user.db?.login && user.db?.login !== user.name) {
                     return (
                       <>
                         <span className={"font-bold"}>{user.name}</span>
                         <span
                           className={"font-medium ml-1 text-muted-foreground"}
                         >
-                          (@{user.login})
+                          (@{user.db.login})
                         </span>
                       </>
                     );
                   } else {
                     return (
                       <span className={"font-bold"}>
-                        @{user.login || user.name}
+                        @{user.db?.login || user.name}
                       </span>
                     );
                   }
@@ -157,7 +157,11 @@ export default async function Dashboard({
           ></div>
           <div className={"md:flex-2 xl:flex-3 md:ml-5"}>
             {slug === "main" && (
-              <MainPage page={page} installationId={installation}></MainPage>
+              <MainPage
+                page={page}
+                installationId={installation}
+                session={session}
+              ></MainPage>
             )}
             {slug === "stats" && <StatsPage></StatsPage>}
             {slug === "settings" && <SettingsPage></SettingsPage>}

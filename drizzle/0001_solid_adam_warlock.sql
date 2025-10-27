@@ -1,0 +1,1 @@
+ALTER TABLE `repo_stats` ADD `lorc` integer DEFAULT 0 NOT NULL;

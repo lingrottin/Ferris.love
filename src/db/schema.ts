@@ -1,73 +1,115 @@
-import { sql } from "drizzle-orm";
 import {
+  index,
   integer,
   primaryKey,
   sqliteTable,
   text,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { v7 as uuidv7 } from "uuid";
 
-// 🧍‍♂️ Users
-export const users = sqliteTable("users", {
-  githubId: text("github_id").notNull().unique(),
-  login: text("login").notNull().unique(),
-  meta: text("meta", { mode: "json" })
-    .$type<Record<string, any>>()
-    .default(sql`json('{}')`),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
-    sql`CURRENT_TIMESTAMP`,
-  ),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(
-    sql`CURRENT_TIMESTAMP`,
-  ),
-});
+const nowSeconds = () => Math.floor(Date.now() / 1000);
 
-// 🏗️ Repos
-export const repos = sqliteTable("repos", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()), // 👈 UUID v7 在 Workers 可直接生成
-  githubRepoId: text("github_repo_id").notNull().unique(),
-  ownerLogin: text("owner_login").notNull(),
-  name: text("name").notNull(),
-  url: text("url").notNull(),
-  isPrivate: integer("is_private", { mode: "boolean" }).default(false),
-  status: text("status", { enum: ["queued", "analyzing", "done", "failed"] })
-    .notNull()
-    .default("queued"),
-  lastScanAt: integer("last_scan_at", { mode: "timestamp_ms" }),
-  scanError: text("scan_error"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(
-    sql`CURRENT_TIMESTAMP`,
-  ),
-});
-
-// 👥 User ↔ Repo 多对多中间表
-export const userRepos = sqliteTable(
-  "user_repos",
+/* ------------------------------------------
+ * users — GitHub 用户表
+ * ------------------------------------------ */
+export const users = sqliteTable(
+  "users",
   {
-    userId: text("user_id").notNull(), // references users.githubId
-    repoId: text("repo_id").notNull(), // references repos.id
-    role: text("role", { enum: ["owner", "collaborator"] }).default("owner"),
-    addedAt: integer("added_at", { mode: "timestamp_ms" }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
+    githubId: text("github_id").primaryKey(),
+    authId: text("auth_id").notNull().unique(),
+    login: text("login").notNull().unique(),
+    meta: text("meta")
+      .notNull()
+      .default("{}" as const),
+    createdAt: integer("created_at").notNull().$defaultFn(nowSeconds),
+    updatedAt: integer("updated_at").notNull().$defaultFn(nowSeconds),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.userId, table.repoId] }),
+    authIdUnique: uniqueIndex("auth_id_unique").on(table.authId),
+    loginUnique: uniqueIndex("login_unique").on(table.login),
   }),
 );
 
-// 📊 Repo Stats
-export const repoStats = sqliteTable("repo_stats", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()), // 👈 UUID v7
-  repoId: text("repo_id").notNull(), // references repos.id
-  commitSha: text("commit_sha").notNull(),
-  counts: text("counts", { mode: "json" })
-    .$type<Record<string, number>>()
-    .notNull(),
-  analyzedAt: integer("analyzed_at", { mode: "timestamp_ms" }).default(
-    sql`CURRENT_TIMESTAMP`,
-  ),
-});
+/* ------------------------------------------
+ * repos — 仓库表
+ * ------------------------------------------ */
+export const repos = sqliteTable(
+  "repos",
+  {
+    githubRepoId: text("github_repo_id").primaryKey(),
+    ownerLogin: text("owner_login").notNull(),
+    name: text("name").notNull(),
+    isPrivate: integer("is_private", { mode: "boolean" }).default(false),
+    status: text("status", {
+      enum: ["queued", "analyzing", "done", "failed"],
+    })
+      .notNull()
+      .default("queued"),
+    lastScanAt: integer("last_scan_at"),
+    scanError: text("scan_error"),
+    createdAt: integer("created_at").$defaultFn(nowSeconds),
+  },
+  (table) => ({
+    // 用户 + 仓库名 唯一约束
+    ownerRepoUnique: uniqueIndex("owner_repo_unique").on(
+      table.ownerLogin,
+      table.name,
+    ),
+    // 为按时间排序的查询添加索引
+    createdAtIdx: index("idx_repos_created_at").on(table.createdAt),
+  }),
+);
+
+/* ------------------------------------------
+ * user_repos — 用户与仓库的多对多关系表
+ * ------------------------------------------ */
+export const userRepos = sqliteTable(
+  "user_repos",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.githubId, { onDelete: "cascade" }),
+    repoId: text("repo_id")
+      .notNull()
+      .references(() => repos.githubRepoId, { onDelete: "cascade" }),
+    role: text("role", { enum: ["owner", "collaborator"] }).default("owner"),
+    addedAt: integer("added_at").$defaultFn(nowSeconds),
+    updatedAt: integer("updated_at").$defaultFn(nowSeconds),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.repoId] }),
+    // 为通过用户查仓库加速
+    userIdIdx: index("idx_user_repos_user_id").on(table.userId),
+  }),
+);
+
+/* ------------------------------------------
+ * repo_stats — 仓库分析结果表
+ * ------------------------------------------ */
+export const repoStats = sqliteTable(
+  "repo_stats",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => uuidv7()),
+    repoId: text("repo_id")
+      .notNull()
+      .references(() => repos.githubRepoId, { onDelete: "cascade" }),
+    lorc: integer("lorc").notNull().default(0),
+    commitSha: text("commit_sha").notNull(),
+    counts: text("counts").notNull(),
+    analyzedAt: integer("analyzed_at").$defaultFn(nowSeconds),
+  },
+  (table) => ({
+    repoCommitUnique: uniqueIndex("repo_commit_unique").on(
+      table.repoId,
+      table.commitSha,
+    ),
+    // 为按 analyzed_at DESC 查找最新 stat 加速
+    repoAnalyzedAtIdx: index("idx_repo_stats_repo_analyzed_at").on(
+      table.repoId,
+      table.analyzedAt,
+    ),
+  }),
+);

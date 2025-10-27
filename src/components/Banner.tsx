@@ -1,19 +1,22 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export function Banner(props: {
+export function Banner({
+  children,
+  variant = "warning",
+}: {
   children?: ReactNode;
   variant?: "warning" | "note";
 }) {
-  const variant = props.variant || "warning";
   return (
     <div
       className={cn("text-center p-2 border-b-1 border-t-1 font-mono", {
-        "text-orange-600 border-orange-100 bg-orange-50": variant === "warning",
-        "text-cyan-500 border-cyan-100 bg-cyan-50": variant === "note",
+        "text-orange-600 border-orange-700/15 bg-orange-700/10":
+          variant === "warning",
+        "text-cyan-500 border-cyan-700/15 bg-cyan-700/10": variant === "note",
       })}
     >
-      {props.children}
+      {children}
     </div>
   );
 }

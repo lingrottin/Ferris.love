@@ -1,6 +1,9 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { BookX, CircleOff } from "lucide-react";
 import Link from "next/link";
+import type { Session } from "next-auth";
+import { getUserRepos } from "@/app/dashboard/[slug]/util";
+import { PaginationIndicator } from "@/components/PaginationIndicator";
 import { RepoCard } from "@/components/RepoCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,110 +14,32 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { makeDb } from "@/db/util";
 import { cn } from "@/lib/utils";
-import { gh as _gh } from "@/octokit";
-
-function PaginationIndicator({
-  page,
-  page_total,
-}: {
-  page: number;
-  page_total: number;
-}) {
-  const maxVisiblePages = 5;
-  const startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
-  const endPage = Math.min(page_total, startPage + maxVisiblePages - 1);
-  const pages = Array.from(
-    { length: endPage - startPage + 1 },
-    (_, i) => startPage + i,
-  );
-
-  return (
-    <Pagination>
-      <PaginationContent>
-        {page > 1 && (
-          <PaginationItem>
-            <PaginationPrevious href={`?page=${page - 1}`} />
-          </PaginationItem>
-        )}
-
-        {startPage > 1 && (
-          <>
-            <PaginationItem>
-              <PaginationLink href="?page=1">1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-          </>
-        )}
-
-        {pages.map((p) => (
-          <PaginationItem key={p}>
-            <PaginationLink href={`?page=${p}`} isActive={p === page}>
-              {p}
-            </PaginationLink>
-          </PaginationItem>
-        ))}
-
-        {endPage < page_total && (
-          <>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href={`?page=${page_total}`}>
-                {page_total}
-              </PaginationLink>
-            </PaginationItem>
-          </>
-        )}
-
-        {page < page_total && (
-          <PaginationItem>
-            <PaginationNext href={`?page=${page + 1}`} />
-          </PaginationItem>
-        )}
-      </PaginationContent>
-    </Pagination>
-  );
-}
 
 export async function MainPage({
   installationId,
   page,
+  session,
 }: {
   installationId: number | null;
   page: number;
+  session: Session;
 }) {
   const { env } = getCloudflareContext();
-  const repo = [];
-  let repo_total = 0;
-  if (installationId !== null) {
-    const gh = await _gh().getInstallationOctokit(installationId);
-    const { data } = await gh.rest.apps.listReposAccessibleToInstallation({
-      per_page: 15,
-      page: page,
-    });
-    repo_total = data.total_count;
-    repo.push(...(data.repositories || []));
-  }
-  const page_total = Math.ceil(repo_total / 15);
+  const { reposData, totalCount } = await (async () => {
+    if (session.user.db)
+      return await getUserRepos(session.user.db.githubId, await makeDb(), page);
+    else return { reposData: [], totalCount: 0 };
+  })();
+
+  const page_total = Math.ceil(totalCount / 15);
   return (
     <div
       className={cn({
         "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3":
-          repo.length !== 0,
-        "flex flex-col items-center": repo.length === 0,
+          reposData.length !== 0,
+        "flex flex-col items-center": reposData.length === 0,
       })}
     >
       {installationId === null && (
@@ -140,7 +65,7 @@ export async function MainPage({
           </EmptyContent>
         </Empty>
       )}
-      {installationId !== null && repo.length === 0 && (
+      {installationId !== null && reposData.length === 0 && (
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -153,20 +78,22 @@ export async function MainPage({
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button>Add a repository</Button>
+            <Button asChild>
+              <Link href={"/dashboard/settings"}>Go to Settings Page</Link>
+            </Button>
           </EmptyContent>
         </Empty>
       )}
-      {repo.map((r) => (
+      {reposData.map((r) => (
         <RepoCard
-          key={r.id}
+          key={r.repoId}
           repo={r.name}
-          username={r.owner.login}
-          lorc={1145}
+          username={r.ownerLogin}
+          lorc={r.lorc}
           lastUpdated={"idk"}
         />
       ))}
-      {repo.length !== 0 && (
+      {reposData.length !== 0 && (
         <div
           className={
             "col-span-1 md:col-span-2 xl:col-span-3 flex justify-center mt-3 mb-6"
