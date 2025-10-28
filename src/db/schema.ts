@@ -25,10 +25,10 @@ export const users = sqliteTable(
     createdAt: integer("created_at").notNull().$defaultFn(nowSeconds),
     updatedAt: integer("updated_at").notNull().$defaultFn(nowSeconds),
   },
-  (table) => ({
-    authIdUnique: uniqueIndex("auth_id_unique").on(table.authId),
-    loginUnique: uniqueIndex("login_unique").on(table.login),
-  }),
+  (table) => ([
+    uniqueIndex("auth_id_unique").on(table.authId),
+    uniqueIndex("login_unique").on(table.login),
+  ]),
 );
 
 /* ------------------------------------------
@@ -50,15 +50,15 @@ export const repos = sqliteTable(
     scanError: text("scan_error"),
     createdAt: integer("created_at").$defaultFn(nowSeconds),
   },
-  (table) => ({
+  (table) => ([
     // 用户 + 仓库名 唯一约束
-    ownerRepoUnique: uniqueIndex("owner_repo_unique").on(
+    uniqueIndex("owner_repo_unique").on(
       table.ownerLogin,
       table.name,
     ),
     // 为按时间排序的查询添加索引
-    createdAtIdx: index("idx_repos_created_at").on(table.createdAt),
-  }),
+    index("idx_repos_created_at").on(table.createdAt),
+  ]),
 );
 
 /* ------------------------------------------
@@ -77,11 +77,11 @@ export const userRepos = sqliteTable(
     addedAt: integer("added_at").$defaultFn(nowSeconds),
     updatedAt: integer("updated_at").$defaultFn(nowSeconds),
   },
-  (table) => ({
-    pk: primaryKey({ columns: [table.userId, table.repoId] }),
+  (table) => ([
+    primaryKey({ columns: [table.userId, table.repoId] }),
     // 为通过用户查仓库加速
-    userIdIdx: index("idx_user_repos_user_id").on(table.userId),
-  }),
+    index("idx_user_repos_user_id").on(table.userId),
+  ]),
 );
 
 /* ------------------------------------------
@@ -101,15 +101,15 @@ export const repoStats = sqliteTable(
     counts: text("counts").notNull(),
     analyzedAt: integer("analyzed_at").$defaultFn(nowSeconds),
   },
-  (table) => ({
-    repoCommitUnique: uniqueIndex("repo_commit_unique").on(
+  (table) => ([
+    uniqueIndex("repo_commit_unique").on(
       table.repoId,
       table.commitSha,
     ),
     // 为按 analyzed_at DESC 查找最新 stat 加速
-    repoAnalyzedAtIdx: index("idx_repo_stats_repo_analyzed_at").on(
+    index("idx_repo_stats_repo_analyzed_at").on(
       table.repoId,
       table.analyzedAt,
     ),
-  }),
+  ]),
 );
