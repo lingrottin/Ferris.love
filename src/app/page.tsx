@@ -4,7 +4,13 @@ import { signIn } from "@/auth";
 import { Banner } from "@/components/Banner";
 import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
+import { generateBadge } from "@/lib/badge";
 import { cn } from "@/lib/utils";
+
+const exampleBadgeSvg = generateBadge(
+  { fn_count: 142, struct_count: 38, enum_count: 12, trait_count: 7 },
+  "user/awesome-crate",
+);
 
 export default async function Home({
   searchParams,
@@ -36,8 +42,16 @@ export default async function Home({
             <span className="text-6xl font-black text-orange-600">Ferris</span>
           </span>
         </div>
-        <div className="mt-7 h-35 w-80 p-5 bg-orange-500/10 border-1 border-orange-500/10 rounded-xl">
-          should be the example of the card
+        <p className="mt-4 text-muted-foreground text-center max-w-md px-5">
+          Embed a live Rust code stats badge in your README. Track functions,
+          structs, enums, and traits across your repositories.
+        </p>
+        <div className="mt-7 p-4 bg-orange-500/5 border border-orange-500/10 rounded-xl">
+          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static SVG */}
+          <div dangerouslySetInnerHTML={{ __html: exampleBadgeSvg }} />
+        </div>
+        <div className="mt-3 text-xs text-muted-foreground font-mono px-5 text-center">
+          {"![badge](https://ferris.love/badge/user/awesome-crate)"}
         </div>
         <form
           action={async () => {

@@ -1,4 +1,6 @@
-import type * as React from "react";
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -42,54 +44,111 @@ function Item({
   );
 }
 
+function AddRepoForm() {
+  const [repo, setRepo] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [message, setMessage] = useState("");
+
+  async function handleSubmit() {
+    const trimmed = repo.trim();
+    if (!trimmed?.includes("/")) {
+      setStatus("error");
+      setMessage("Please enter a valid owner/repo format.");
+      return;
+    }
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const res = await fetch("/api/repos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo: trimmed }),
+      });
+
+      const data = (await res.json()) as { status?: string; error?: string };
+
+      if (res.ok) {
+        setStatus("success");
+        setMessage(`Queued ${trimmed} for analysis!`);
+        setRepo("");
+      } else {
+        setStatus("error");
+        setMessage(data.error || "Failed to add repository.");
+      }
+    } catch {
+      setStatus("error");
+      setMessage("Network error. Please try again.");
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-row gap-2">
+        <input
+          type="text"
+          value={repo}
+          onChange={(e) => {
+            setRepo(e.target.value);
+            setStatus("idle");
+          }}
+          placeholder="owner/repo"
+          className="flex-1 border rounded-md px-3 py-2 text-sm bg-background"
+        />
+        <Button
+          variant="outline"
+          onClick={handleSubmit}
+          disabled={status === "loading"}
+        >
+          {status === "loading" ? "Adding..." : "Add"}
+        </Button>
+      </div>
+      {message && (
+        <div
+          className={cn("text-sm", {
+            "text-green-600": status === "success",
+            "text-red-600": status === "error",
+          })}
+        >
+          {message}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SettingsPage() {
   return (
     <div className={"flex flex-col"}>
       <Item
         name={"Add repositories"}
-        desc={"Add repositories to be monitored by ferris.love"}
-        right={<Button variant={"outline"}>Select</Button>}
-        down={
-          <div className={"text-sm text-muted-foreground mt-2"}>
-            You can add or remove repositories at any time
-          </div>
-        }
+        desc={"Add a Rust repository to track with ferris.love"}
+        down={<AddRepoForm />}
         first
-      ></Item>
+      />
       <Item
         name={"Trigger recount"}
         desc={
           "Recalculate your contribution stats on all monitored repositories"
         }
         right={<Button variant={"outline"}>Recount</Button>}
-      ></Item>
-      <Item
-        name={"Lorem ipsum"}
-        desc={
-          "Consectetur adipiscing elit. Maecenas maximus nulla a risus interdum hendrerit"
-        }
-        right={<Button variant={"outline"}>Praesent</Button>}
-      ></Item>
-      <Item
-        name={"Lorem ipsum"}
-        desc={
-          "Consectetur adipiscing elit. Maecenas maximus nulla a risus interdum hendrerit"
-        }
-        right={<Button variant={"outline"}>Praesent</Button>}
-      ></Item>
+      />
       <Item
         name={"Uninstall ferris.love"}
         desc={
           "Uninstall ferris.love from your GitHub account and delete your data held by us"
         }
         right={<Button variant={"destructive"}>Uninstall</Button>}
-      ></Item>
+      />
       <Item
         name={"Sponsor"}
         desc={"Support the development of ferris.love"}
         right={<Button variant={"outline"}>Sponsor</Button>}
         final
-      ></Item>
+      />
     </div>
   );
 }

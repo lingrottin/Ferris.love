@@ -3,6 +3,7 @@ import { BookX, CircleOff } from "lucide-react";
 import Link from "next/link";
 import type { Session } from "next-auth";
 import { getUserRepos } from "@/app/dashboard/[slug]/util";
+import { BadgeEmbed } from "@/components/BadgeEmbed";
 import { PaginationIndicator } from "@/components/PaginationIndicator";
 import { RepoCard } from "@/components/RepoCard";
 import { Button } from "@/components/ui/button";
@@ -33,12 +34,12 @@ export async function MainPage({
     else return { reposData: [], totalCount: 0 };
   })();
 
+  const baseUrl = env.AUTH_URL || "https://ferris.love";
   const page_total = Math.ceil(totalCount / 15);
   return (
     <div
       className={cn({
-        "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3":
-          reposData.length !== 0,
+        "flex flex-col gap-3": reposData.length !== 0,
         "flex flex-col items-center": reposData.length === 0,
       })}
     >
@@ -73,8 +74,8 @@ export async function MainPage({
             </EmptyMedia>
             <EmptyTitle>No repository added</EmptyTitle>
             <EmptyDescription>
-              You may go to the settings page to add your repositories so that
-              we can track your code.
+              Go to the settings page to add your Rust repositories and get
+              embeddable badges.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -84,25 +85,27 @@ export async function MainPage({
           </EmptyContent>
         </Empty>
       )}
-      {reposData.map((r) => (
-        <RepoCard
-          key={r.repoId}
-          repo={r.name}
-          username={r.ownerLogin}
-          lorc={r.lorc}
-          lastUpdated={"idk"}
-        />
-      ))}
+      {reposData.map((r) => {
+        const fullName = `${r.ownerLogin}/${r.name}`;
+        const badgeUrl = `${baseUrl}/badge/${fullName}`;
+        return (
+          <div key={r.repoId} className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <RepoCard
+                repo={r.name}
+                username={r.ownerLogin}
+                lorc={r.lorc}
+                lastUpdated={"idk"}
+                className="md:col-span-2"
+              />
+              <BadgeEmbed badgeUrl={badgeUrl} fullName={fullName} />
+            </div>
+          </div>
+        );
+      })}
       {reposData.length !== 0 && (
-        <div
-          className={
-            "col-span-1 md:col-span-2 xl:col-span-3 flex justify-center mt-3 mb-6"
-          }
-        >
-          <PaginationIndicator
-            page={page}
-            page_total={page_total}
-          ></PaginationIndicator>
+        <div className="flex justify-center mt-3 mb-6">
+          <PaginationIndicator page={page} page_total={page_total} />
         </div>
       )}
     </div>
