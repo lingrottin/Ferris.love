@@ -58,25 +58,25 @@ export async function POST(request: Request) {
     private: boolean;
   };
 
-  // Check if it's a Rust project
-  if (ghRepo.language !== "Rust") {
-    // Fallback: check for Cargo.toml
-    const cargoResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}/contents/Cargo.toml`,
-      {
-        headers: {
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": "ferris.love",
-        },
-      },
-    );
-    if (!cargoResponse.ok) {
-      return NextResponse.json(
-        { error: "Repository does not appear to be a Rust project." },
-        { status: 422 },
-      );
-    }
-  }
+  // // Check if it's a Rust project
+  // if (ghRepo.language !== "Rust") {
+  //   // Fallback: check for Cargo.toml
+  //   const cargoResponse = await fetch(
+  //     `https://api.github.com/repos/${owner}/${repoName}/contents/Cargo.toml`,
+  //     {
+  //       headers: {
+  //         Accept: "application/vnd.github.v3+json",
+  //         "User-Agent": "ferris.love",
+  //       },
+  //     },
+  //   );
+  //   if (!cargoResponse.ok) {
+  //     return NextResponse.json(
+  //       { error: "Repository does not appear to be a Rust project." },
+  //       { status: 422 },
+  //     );
+  //   }
+  // }
 
   const db = await makeDb();
   const githubRepoId = String(ghRepo.id);
@@ -122,8 +122,9 @@ export async function POST(request: Request) {
 
   if (matthewUrl) {
     try {
+      console.log("Invoking Matthew for repo:", `${owner}/${repoName}`);
       const callbackUrl = `${env.AUTH_URL}/api/callback/matthew`;
-      await fetch(`${matthewUrl}/invoke`, {
+      await fetch(`${matthewUrl}/api/count`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -137,6 +138,8 @@ export async function POST(request: Request) {
     } catch (e) {
       console.error("Failed to invoke Matthew:", e);
     }
+  } else {
+    console.warn("MATTHEW_URL not configured, skipping Matthew invocation");
   }
 
   return NextResponse.json({ status: "queued", repoId: githubRepoId });
