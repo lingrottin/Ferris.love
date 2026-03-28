@@ -15,6 +15,9 @@ declare namespace Cloudflare {
 		DB_AUTH: D1Database;
 		DB: D1Database;
 		ASSETS: Fetcher;
+		MATTHEW_URL: string;
+		MATTHEW_TOKEN: string;
+		MATTHEW_CALLBACK_SECRET: string;
 	}
 }
 interface CloudflareEnv extends Cloudflare.Env {}

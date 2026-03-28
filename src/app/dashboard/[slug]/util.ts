@@ -44,6 +44,7 @@ export async function getUserRepos(
         repoId: repos.githubRepoId,
         ownerLogin: repos.ownerLogin,
         name: repos.name,
+        status: repos.status,
         lorc: sql<number>`COALESCE(${latestStats.lorc}, 0)`.as("lorc"),
         analyzedAt: latestStats.analyzedAt,
         totalCount: sql<number>`COUNT(*) OVER ()`.as("total_count"),
@@ -68,6 +69,7 @@ export async function getUserRepos(
     repoId: r.repoId,
     ownerLogin: r.ownerLogin,
     name: r.name,
+    status: r.status,
     lorc: r.lorc,
     analyzedAt: r.analyzedAt,
   }));

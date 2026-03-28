@@ -22,6 +22,13 @@
       "when": 1761414491119,
       "tag": "0002_mature_falcon",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1774687947700,
+      "tag": "0003_panoramic_wrecker",
+      "breakpoints": true
     }
   ]
 }

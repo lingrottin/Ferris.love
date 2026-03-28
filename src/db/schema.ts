@@ -25,10 +25,10 @@ export const users = sqliteTable(
     createdAt: integer("created_at").notNull().$defaultFn(nowSeconds),
     updatedAt: integer("updated_at").notNull().$defaultFn(nowSeconds),
   },
-  (table) => ([
+  (table) => [
     uniqueIndex("auth_id_unique").on(table.authId),
     uniqueIndex("login_unique").on(table.login),
-  ]),
+  ],
 );
 
 /* ------------------------------------------
@@ -48,17 +48,15 @@ export const repos = sqliteTable(
       .default("queued"),
     lastScanAt: integer("last_scan_at"),
     scanError: text("scan_error"),
+    webhookSecret: text("webhook_secret"),
     createdAt: integer("created_at").$defaultFn(nowSeconds),
   },
-  (table) => ([
+  (table) => [
     // 用户 + 仓库名 唯一约束
-    uniqueIndex("owner_repo_unique").on(
-      table.ownerLogin,
-      table.name,
-    ),
+    uniqueIndex("owner_repo_unique").on(table.ownerLogin, table.name),
     // 为按时间排序的查询添加索引
     index("idx_repos_created_at").on(table.createdAt),
-  ]),
+  ],
 );
 
 /* ------------------------------------------
@@ -77,11 +75,11 @@ export const userRepos = sqliteTable(
     addedAt: integer("added_at").$defaultFn(nowSeconds),
     updatedAt: integer("updated_at").$defaultFn(nowSeconds),
   },
-  (table) => ([
+  (table) => [
     primaryKey({ columns: [table.userId, table.repoId] }),
     // 为通过用户查仓库加速
     index("idx_user_repos_user_id").on(table.userId),
-  ]),
+  ],
 );
 
 /* ------------------------------------------
@@ -96,20 +94,19 @@ export const repoStats = sqliteTable(
     repoId: text("repo_id")
       .notNull()
       .references(() => repos.githubRepoId, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: ["analyzing", "done", "error"],
+    })
+      .notNull()
+      .default("analyzing"),
     lorc: integer("lorc").notNull().default(0),
     commitSha: text("commit_sha").notNull(),
-    counts: text("counts").notNull(),
+    counts: text("counts").notNull().default("{}"),
     analyzedAt: integer("analyzed_at").$defaultFn(nowSeconds),
   },
-  (table) => ([
-    uniqueIndex("repo_commit_unique").on(
-      table.repoId,
-      table.commitSha,
-    ),
+  (table) => [
+    uniqueIndex("repo_commit_unique").on(table.repoId, table.commitSha),
     // 为按 analyzed_at DESC 查找最新 stat 加速
-    index("idx_repo_stats_repo_analyzed_at").on(
-      table.repoId,
-      table.analyzedAt,
-    ),
-  ]),
+    index("idx_repo_stats_repo_analyzed_at").on(table.repoId, table.analyzedAt),
+  ],
 );

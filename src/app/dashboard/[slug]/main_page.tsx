@@ -90,7 +90,12 @@ export async function MainPage({
           repo={r.name}
           username={r.ownerLogin}
           lorc={r.lorc}
-          lastUpdated={"idk"}
+          status={r.status}
+          lastUpdated={
+            r.analyzedAt
+              ? new Date(r.analyzedAt * 1000).toLocaleDateString()
+              : "never"
+          }
         />
       ))}
       {reposData.length !== 0 && (
