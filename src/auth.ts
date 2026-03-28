@@ -50,40 +50,49 @@ export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
       async signIn({ profile, user }) {
         if (!profile) return false;
         const db = await makeDb();
-        const u = await db
+
+        const githubId = String(profile.id);
+        const login = String(profile.login);
+        const authId = user.id || "";
+
+        const existing = await db
           .select()
           .from(users)
-          .where(eq(users.authId, user.id ?? ""));
-        if (u.length === 0) {
-          //biome-ignore-start lint/style/noNonNullAssertion: they exist!
-          const v = {
-            githubId: profile.id!,
-            authId: user.id || "",
-            // there is a mysterious problem that TypeScript assumes profile.login as {}
-            // but it is a number
-            login: (profile.login! as unknown as number).toString(10),
-          };
-          //biome-ignore-end lint/style/noNonNullAssertion: why an end statement should have an explanation???
+          .where(eq(users.githubId, githubId));
+
+        if (existing.length === 0) {
           try {
-            await db.insert(users).values(v);
+            await db.insert(users).values({
+              githubId,
+              authId,
+              login,
+            });
           } catch (e) {
-            console.log(e);
+            console.error("Failed to insert user:", e);
+          }
+        } else if (existing[0].authId !== authId && authId) {
+          try {
+            await db
+              .update(users)
+              .set({ authId, login, updatedAt: Math.floor(Date.now() / 1000) })
+              .where(eq(users.githubId, githubId));
+          } catch (e) {
+            console.error("Failed to update user:", e);
           }
         }
         return true;
       },
       async session({ session }) {
+        if (!session.user?.id) return session;
         const db = await makeDb();
         const u = await db
           .select()
           .from(users)
-          .where(eq(users.authId, session.user.id ?? ""));
-        if (u.length === 0) {
-          return session;
+          .where(eq(users.authId, session.user.id));
+        if (u.length > 0) {
+          session.user.db = u[0];
         }
-        const s = session;
-        s.user.db = u[0];
-        return s;
+        return session;
       },
     },
   };
