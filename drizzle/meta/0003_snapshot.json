@@ -63,18 +63,12 @@
       "indexes": {
         "repo_commit_unique": {
           "name": "repo_commit_unique",
-          "columns": [
-            "repo_id",
-            "commit_sha"
-          ],
+          "columns": ["repo_id", "commit_sha"],
           "isUnique": true
         },
         "idx_repo_stats_repo_analyzed_at": {
           "name": "idx_repo_stats_repo_analyzed_at",
-          "columns": [
-            "repo_id",
-            "analyzed_at"
-          ],
+          "columns": ["repo_id", "analyzed_at"],
           "isUnique": false
         }
       },
@@ -83,12 +77,8 @@
           "name": "repo_stats_repo_id_repos_github_repo_id_fk",
           "tableFrom": "repo_stats",
           "tableTo": "repos",
-          "columnsFrom": [
-            "repo_id"
-          ],
-          "columnsTo": [
-            "github_repo_id"
-          ],
+          "columnsFrom": ["repo_id"],
+          "columnsTo": ["github_repo_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -169,17 +159,12 @@
       "indexes": {
         "owner_repo_unique": {
           "name": "owner_repo_unique",
-          "columns": [
-            "owner_login",
-            "name"
-          ],
+          "columns": ["owner_login", "name"],
           "isUnique": true
         },
         "idx_repos_created_at": {
           "name": "idx_repos_created_at",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -231,9 +216,7 @@
       "indexes": {
         "idx_user_repos_user_id": {
           "name": "idx_user_repos_user_id",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -242,12 +225,8 @@
           "name": "user_repos_user_id_users_github_id_fk",
           "tableFrom": "user_repos",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "github_id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["github_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -255,22 +234,15 @@
           "name": "user_repos_repo_id_repos_github_repo_id_fk",
           "tableFrom": "user_repos",
           "tableTo": "repos",
-          "columnsFrom": [
-            "repo_id"
-          ],
-          "columnsTo": [
-            "github_repo_id"
-          ],
+          "columnsFrom": ["repo_id"],
+          "columnsTo": ["github_repo_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "user_repos_user_id_repo_id_pk": {
-          "columns": [
-            "user_id",
-            "repo_id"
-          ],
+          "columns": ["user_id", "repo_id"],
           "name": "user_repos_user_id_repo_id_pk"
         }
       },
@@ -327,30 +299,22 @@
       "indexes": {
         "users_auth_id_unique": {
           "name": "users_auth_id_unique",
-          "columns": [
-            "auth_id"
-          ],
+          "columns": ["auth_id"],
           "isUnique": true
         },
         "users_login_unique": {
           "name": "users_login_unique",
-          "columns": [
-            "login"
-          ],
+          "columns": ["login"],
           "isUnique": true
         },
         "auth_id_unique": {
           "name": "auth_id_unique",
-          "columns": [
-            "auth_id"
-          ],
+          "columns": ["auth_id"],
           "isUnique": true
         },
         "login_unique": {
           "name": "login_unique",
-          "columns": [
-            "login"
-          ],
+          "columns": ["login"],
           "isUnique": true
         }
       },

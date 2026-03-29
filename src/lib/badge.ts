@@ -1,48 +1,3 @@
-export const COUNTS_LABELS: Record<string, string> = {
-  call_fn: "Fn Calls",
-  call_method: "Method Calls",
-  call_macro: "Macro Calls",
-  block_if: "If Blocks",
-  block_else: "Else Blocks",
-  block_match: "Match Exprs",
-  block_match_arms: "Match Arms",
-  block_for: "For Loops",
-  block_while: "While Loops",
-  block_loop: "Loops",
-  block_unsafe: "Unsafe Blocks",
-  def_var: "Variables",
-  def_var_mut: "Mut Variables",
-  def_fn: "Functions",
-  def_method: "Methods",
-  def_async_fn: "Async Fns",
-  def_async_method: "Async Methods",
-  def_trait: "Traits",
-  def_type: "Type Aliases",
-  def_enum: "Enums",
-  def_struct: "Structs",
-  def_union: "Unions",
-  def_mod: "Modules",
-  def_const: "Constants",
-  def_static: "Statics",
-  trait_impl: "Trait Impls",
-  def_impl: "Impl Blocks",
-  def_macro_rules: "Macro Defs",
-  expr_closure: "Closures",
-  expr_await: "Awaits",
-  expr_try: "Try (?)",
-  expr_return: "Returns",
-  expr_yield: "Yields",
-  expr_binop: "Binary Ops",
-  expr_unop: "Unary Ops",
-  use_stmt: "Use Stmts",
-  extern_crate: "Extern Crates",
-  def_struct_fields: "Struct Fields",
-  def_enum_variants: "Enum Variants",
-  def_trait_members: "Trait Members",
-  def_impl_members: "Impl Members",
-  def_test_fn: "Test Fns",
-};
-
 export const DEFAULT_SHOW = [
   "def_fn",
   "def_struct",
@@ -79,25 +34,7 @@ function escapeXml(s: string): string {
 }
 
 // Geometric Ferris crab icon (simplified, flat)
-const FERRIS_ICON = `<g transform="translate(12, 8) scale(0.55)">
-  <ellipse cx="30" cy="32" rx="24" ry="16" fill="#F74C00" opacity="0.9"/>
-  <ellipse cx="30" cy="30" rx="22" ry="14" fill="#F74C00"/>
-  <circle cx="22" cy="27" r="3.5" fill="white"/>
-  <circle cx="38" cy="27" r="3.5" fill="white"/>
-  <circle cx="22" cy="27" r="1.8" fill="#222"/>
-  <circle cx="38" cy="27" r="1.8" fill="#222"/>
-  <path d="M4 28 Q0 20 6 16" stroke="#F74C00" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  <path d="M56 28 Q60 20 54 16" stroke="#F74C00" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  <circle cx="6" cy="15" r="2.5" fill="#F74C00"/>
-  <circle cx="54" cy="15" r="2.5" fill="#F74C00"/>
-  <path d="M8 38 Q4 44 2 48" stroke="#F74C00" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M14 42 Q12 48 10 52" stroke="#F74C00" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M24 44 Q24 50 24 54" stroke="#F74C00" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M36 44 Q36 50 36 54" stroke="#F74C00" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M46 42 Q48 48 50 52" stroke="#F74C00" stroke-width="3" fill="none" stroke-linecap="round"/>
-  <path d="M52 38 Q56 44 58 48" stroke="#F74C00" stroke-width="3" fill="none" stroke-linecap="round"/>
-</g>`;
-
+const FERRIS_ICON = ``;
 export function generateBadge(options: BadgeOptions): string {
   const { lorc, metrics, repoName, theme } = options;
   const isDark = theme === "dark";
@@ -128,7 +65,7 @@ export function generateBadge(options: BadgeOptions): string {
     .join("\n    ");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${height}" viewBox="0 0 ${totalWidth} ${height}" role="img" aria-label="${escapeXml(repoName)} Rust stats">
-  <title>${escapeXml(repoName)} — ${formatNumber(lorc)} Lines of Rust</title>
+  <title>${escapeXml(repoName)} — ${formatNumber(lorc)} Lines of Rust code</title>
   <style>
     .badge-fade { opacity: 0; animation: fadeIn 0.4s ease forwards; }
     @keyframes fadeIn { to { opacity: 1; } }
@@ -150,8 +87,8 @@ export function generateBadge(options: BadgeOptions): string {
     <rect x="${leftWidth}" width="${rightWidth}" height="${height}" fill="${bgRight}"/>
     ${FERRIS_ICON}
     <g class="badge-fade">
-      <text x="78" y="23" fill="${textLeft}" font-size="10" font-weight="600" font-family="'Segoe UI',Roboto,sans-serif">${escapeXml(repoName)}</text>
-      <text x="78" y="40" fill="${textLeft}" font-size="14" font-weight="800" font-family="'Segoe UI',Roboto,sans-serif">${formatNumber(lorc)} LoRC</text>
+      <text x="78" y="23" fill="${textLeft}" font-size="10" font-weight="600" font-family="Helvetica,Inter,'Segoe UI',Roboto,sans-serif">${escapeXml(repoName)}</text>
+      <text x="78" y="40" fill="${textLeft}" font-size="14" font-weight="800" font-family="Helvetica,Inter,'Segoe UI',Roboto,sans-serif">${formatNumber(lorc)} LoRC</text>
     </g>
     ${metricsXml}
   </g>

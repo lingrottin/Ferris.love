@@ -1,4 +1,9 @@
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 function StatusIndicator({
@@ -13,18 +18,22 @@ function StatusIndicator({
     failed: "bg-red-500",
   };
   const labels: Record<string, string> = {
-    queued: "Queued",
+    queued: "Analysis queued",
     analyzing: "Analyzing",
-    done: "Done",
-    failed: "Failed",
+    done: "Up to date",
+    failed: "Last analysis failed",
   };
   return (
-    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span
-        className={cn("inline-block w-2 h-2 rounded-full", colors[status])}
-      />
-      {labels[status]}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn("inline-block w-2 h-2 rounded-full", colors[status])}
+        />
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{labels[status]}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -44,18 +53,18 @@ export function RepoCard(props: {
         props.className,
       )}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-lg">
-          {props.username} / <span className="font-bold">{props.repo}</span>
-        </div>
-        {props.status && <StatusIndicator status={props.status} />}
+      {/* <div className="flex items-center justify-between mb-2"> */}
+      <div className="text-lg">
+        {props.username} / <span className="font-bold">{props.repo}</span>
       </div>
+      {/* </div> */}
       <div className="mt-auto">
         <div className="text-sm">
           Total LoRC: <span>{props.lorc}</span>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="flex flex-row items-center justify-between text-sm text-muted-foreground">
           Last updated {props.lastUpdated}
+          <StatusIndicator status={props.status || "done"} />
         </div>
       </div>
     </Link>

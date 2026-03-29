@@ -103,10 +103,18 @@ export const repoStats = sqliteTable(
     commitSha: text("commit_sha").notNull(),
     counts: text("counts").notNull().default("{}"),
     analyzedAt: integer("analyzed_at").$defaultFn(nowSeconds),
+    callFn: integer("call_fn").notNull().default(0),
+    callMethod: integer("call_method").notNull().default(0),
+    defVar: integer("def_var").notNull().default(0),
   },
   (table) => [
     uniqueIndex("repo_commit_unique").on(table.repoId, table.commitSha),
     // 为按 analyzed_at DESC 查找最新 stat 加速
     index("idx_repo_stats_repo_analyzed_at").on(table.repoId, table.analyzedAt),
+    index("idx_repo_stats_status_repo_id_analyzed_at").on(
+      table.status,
+      table.repoId,
+      table.analyzedAt,
+    ),
   ],
 );

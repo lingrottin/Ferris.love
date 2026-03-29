@@ -1,10 +1,22 @@
+"use server";
+
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { and, eq, inArray } from "drizzle-orm";
-import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { repoStats, repos, userRepos } from "@/db/schema";
 import { makeDb } from "@/db/util";
 import { agh } from "@/octokit";
+
+type AddRepositoryResult =
+  | {
+      ok: true;
+      status: "queued" | "existing";
+      repoId: string;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 async function getInstallationId(owner: string): Promise<number> {
   const app = await agh();
@@ -14,46 +26,36 @@ async function getInstallationId(owner: string): Promise<number> {
   return resp.data.id;
 }
 
-export async function POST(request: Request) {
+export async function addRepository(
+  repo: string,
+): Promise<AddRepositoryResult> {
   const session = await auth();
   if (!session?.user?.db?.githubId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return { ok: false, error: "Unauthorized" };
   }
+
+  const parts = repo?.split("/");
+  if (!parts || parts.length !== 2 || !parts[0] || !parts[1]) {
+    return {
+      ok: false,
+      error: 'Invalid repo format. An "Owner/Repo" is expected',
+    };
+  }
+  const [owner, repoName] = parts;
 
   const { env } = await getCloudflareContext({ async: true });
   const db = await makeDb();
 
-  let body: { repo: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const parts = body.repo?.split("/");
-  if (!parts || parts.length !== 2 || !parts[0] || !parts[1]) {
-    return NextResponse.json(
-      { error: "Invalid repo format, expected owner/repo" },
-      { status: 400 },
-    );
-  }
-  const [owner, repoName] = parts;
-
-  // Get GitHub App installation for this owner
   let installationId: number;
   try {
     installationId = await getInstallationId(owner);
   } catch {
-    return NextResponse.json(
-      { error: "GitHub App not installed for this owner" },
-      { status: 400 },
-    );
+    return { ok: false, error: "GitHub App not installed for this owner" };
   }
 
   const app = await agh();
   const octokit = await app.getInstallationOctokit(installationId);
 
-  // Verify repo exists and is Rust
   let repoData: { id: number; language: string | null; full_name: string };
   try {
     const resp = await octokit.request("GET /repos/{owner}/{repo}", {
@@ -66,28 +68,10 @@ export async function POST(request: Request) {
       full_name: resp.data.full_name,
     };
   } catch {
-    return NextResponse.json(
-      { error: "Repository not found" },
-      { status: 404 },
-    );
+    return { ok: false, error: "Repository not found" };
   }
 
-  // Check if it's a Rust repo
-  if (repoData.language !== "Rust") {
-    // Fallback: check for Cargo.toml
-    try {
-      await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
-        owner,
-        repo: repoName,
-        path: "Cargo.toml",
-      });
-    } catch {
-      return NextResponse.json(
-        { error: "Repository is not a Rust project" },
-        { status: 400 },
-      );
-    }
-  }
+  // Cargo.toml 不一定在根目录，并且就算不是 Rust 项目我们也可以数，无非就是 0 嘛。所以这里的检测逻辑是完全没有必要的。
 
   // Get latest commit SHA
   let commitSha: string;
@@ -99,15 +83,11 @@ export async function POST(request: Request) {
     });
     commitSha = commits.data[0].sha;
   } catch {
-    return NextResponse.json(
-      { error: "Could not fetch commits" },
-      { status: 500 },
-    );
+    return { ok: false, error: "Could not fetch commits" };
   }
 
   const githubRepoId = repoData.id.toString();
 
-  // Check if analysis already exists for this commit
   const existingStats = await db
     .select()
     .from(repoStats)
@@ -121,7 +101,6 @@ export async function POST(request: Request) {
 
   const needsAnalysis = existingStats.length === 0;
 
-  // Upsert repos table
   const existingRepo = await db
     .select()
     .from(repos)
@@ -142,7 +121,6 @@ export async function POST(request: Request) {
       .where(eq(repos.githubRepoId, githubRepoId));
   }
 
-  // Link user in user_repos (skip if already linked)
   const existingLink = await db
     .select()
     .from(userRepos)
@@ -162,31 +140,27 @@ export async function POST(request: Request) {
   }
 
   if (needsAnalysis) {
-    // Generate webhook secret and store it
     const webhookSecret = crypto.randomUUID();
     await db
       .update(repos)
       .set({ webhookSecret })
       .where(eq(repos.githubRepoId, githubRepoId));
 
-    // Register GitHub webhook
     try {
       await octokit.request("POST /repos/{owner}/{repo}/hooks", {
         owner,
         repo: repoName,
         config: {
-          url: `${env.AUTH_URL}/api/webhook/github`,
+          url: `${env.BASE_URL}/api/webhook/github`,
           content_type: "json",
           secret: webhookSecret,
         },
         events: ["push"],
       });
     } catch (e) {
-      // Webhook may already exist, continue
       console.warn("Webhook registration failed (may already exist):", e);
     }
 
-    // Insert repo_stats record
     await db.insert(repoStats).values({
       repoId: githubRepoId,
       commitSha,
@@ -194,8 +168,7 @@ export async function POST(request: Request) {
       counts: "{}",
     });
 
-    // Call Matthew API
-    const callbackUrl = `${env.AUTH_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
+    const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
     try {
       await fetch(`${env.MATTHEW_URL}/api/count`, {
         method: "POST",
@@ -211,12 +184,12 @@ export async function POST(request: Request) {
       });
     } catch (e) {
       console.error("Matthew API call failed:", e);
-      // Don't fail the request — the callback will retry or user can re-trigger
     }
   }
 
-  return NextResponse.json({
+  return {
+    ok: true,
     status: needsAnalysis ? "queued" : "existing",
     repoId: githubRepoId,
-  });
+  };
 }

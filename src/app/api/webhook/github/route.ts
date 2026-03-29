@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     .where(eq(repos.githubRepoId, repo.githubRepoId));
 
   // Call Matthew API
-  const callbackUrl = `${env.AUTH_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
+  const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
   try {
     await fetch(`${env.MATTHEW_URL}/api/count`, {
       method: "POST",

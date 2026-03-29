@@ -1,8 +1,12 @@
 "use client";
 
 import type * as React from "react";
-import { type FormEvent, useState } from "react";
+import { useTransition } from "react";
+import { toast } from "sonner";
+import { recount } from "@/app/actions/recount";
+import { AddRepoForm } from "@/components/AddRepository";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 function Item({
@@ -40,107 +44,63 @@ function Item({
         <div className="ml-auto">{right}</div>
       </div>
       {down && <div className="mb-4">{down}</div>}
-      {!final && <div className="border-b-1 w-full" />}
+      {!final && <div className="border-b w-full" />}
     </>
   );
 }
 
-function AddRepoForm() {
-  const [repoInput, setRepoInput] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [message, setMessage] = useState("");
+export function SettingsPage() {
+  const [isRecounting, startRecount] = useTransition();
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const repo = repoInput.trim();
-    if (!repo?.includes("/")) {
-      setStatus("error");
-      setMessage("Please enter a valid repo in owner/repo format");
-      return;
-    }
+  function handleRecount() {
+    startRecount(async () => {
+      try {
+        const result = await recount();
+        if (!result.ok) {
+          toast.error(result.error || "Failed to trigger recount");
+          return;
+        }
 
-    setStatus("loading");
-    setMessage("");
+        if (result.total === 0) {
+          toast.info("No monitored repositories found.");
+          return;
+        }
 
-    try {
-      const res = await fetch("/api/repos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo }),
-      });
-      const data = (await res.json()) as {
-        error?: string;
-        status?: string;
-      };
-      if (!res.ok) {
-        setStatus("error");
-        setMessage(data.error || "Failed to add repository");
-        return;
+        if (result.failed === 0) {
+          toast.success(`Queued recount for ${result.queued} repositories.`);
+          return;
+        }
+
+        toast.warning(
+          `Queued ${result.queued}/${result.total} repositories. ${result.failed} failed to queue.`,
+        );
+      } catch {
+        toast.error("Network error, please try again");
       }
-      setStatus("success");
-      setMessage(
-        data.status === "queued"
-          ? "Repository queued for analysis!"
-          : "Repository already analyzed — linked to your account.",
-      );
-      setRepoInput("");
-    } catch {
-      setStatus("error");
-      setMessage("Network error, please try again");
-    }
+    });
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={repoInput}
-          onChange={(e) => {
-            setRepoInput(e.target.value);
-            if (status !== "idle") setStatus("idle");
-          }}
-          placeholder="owner/repo"
-          className="flex-1 rounded-md border px-3 py-1.5 text-sm bg-background"
-        />
-        <Button
-          type="submit"
-          variant="outline"
-          disabled={status === "loading"}
-          className="cursor-pointer"
-        >
-          {status === "loading" ? "Adding..." : "Add"}
-        </Button>
-      </div>
-      {message && (
-        <p
-          className={cn(
-            "text-sm",
-            status === "error" ? "text-red-500" : "text-green-600",
-          )}
-        >
-          {message}
-        </p>
-      )}
-    </form>
-  );
-}
-
-export function SettingsPage() {
   return (
     <div className="flex flex-col">
       <Item
         name="Add repositories"
         desc="Add a Rust repository to be monitored by ferris.love"
-        down={<AddRepoForm />}
+        right={<AddRepoForm />}
         first
       />
       <Item
         name="Trigger recount"
         desc="Recalculate your contribution stats on all monitored repositories"
-        right={<Button variant="outline">Recount</Button>}
+        right={
+          <Button
+            variant="outline"
+            onClick={handleRecount}
+            disabled={isRecounting}
+          >
+            {isRecounting && <Spinner />}
+            Recount
+          </Button>
+        }
       />
       <Item
         name="Uninstall ferris.love"

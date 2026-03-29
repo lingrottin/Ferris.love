@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import "./styles.css";
 import LocalFont from "next/font/local";
+import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { TopLoader } from "@/components/TopLoader";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
   title: "Ferris.love",
@@ -24,6 +27,7 @@ const _inter = LocalFont({
       style: "italic",
     },
   ],
+  preload: false,
   variable: "--font-inter",
 });
 
@@ -39,14 +43,14 @@ export default function RootLayout({
       className={`${_roboto_mono.variable} ${_inter.variable} antialiased`}
     >
       <body className={"bg-background text-foreground"}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TopLoader></TopLoader>
-          {children}
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <TooltipProvider>
+            <SessionProvider>
+              <TopLoader></TopLoader>
+              {children}
+              <Toaster />
+            </SessionProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

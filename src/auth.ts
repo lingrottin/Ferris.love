@@ -9,6 +9,8 @@ import { makeDb } from "@/db/util";
 declare module "next-auth" {
   interface Session {
     user: {
+      id: string;
+      login?: string;
       db?: InferSelectModel<typeof users>;
     } & DefaultSession["user"];
   }
@@ -37,58 +39,70 @@ async function ensureDbMigrated(env: CloudflareEnv): Promise<void> {
   return _migrationPromise;
 }
 
-// biome-ignore lint/suspicious/noTsIgnore : idk why ts is mad
-// @ts-ignore
 export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
   const { env } = getCloudflareContext();
   await ensureDbMigrated(env);
 
   return {
-    providers: [GitHub],
+    providers: [
+      GitHub({
+        profile(profile) {
+          return {
+            id: String(profile.id),
+            login: profile.login as string,
+            name: profile.name ?? profile.login,
+            email: profile.email,
+            image: profile.avatar_url,
+          };
+        },
+      }),
+    ],
     adapter: D1Adapter(env.DB_AUTH),
+    session: { strategy: "jwt" },
     callbacks: {
+      async jwt({ token, profile, user }) {
+        if (profile) {
+          token.githubId = String(profile.id);
+          token.login = profile.login as string;
+        }
+        if (user?.id) {
+          token.sub = user.id;
+        }
+        return token;
+      },
       async signIn({ profile, user }) {
         if (!profile) return false;
-        const db = await makeDb();
-
-        const githubId = String(profile.id);
-        const login = String(profile.login);
-        const authId = user.id || "";
-
-        const existing = await db
-          .select()
-          .from(users)
-          .where(eq(users.githubId, githubId));
-
-        if (existing.length === 0) {
-          try {
-            await db.insert(users).values({
-              githubId,
-              authId,
-              login,
-            });
-          } catch (e) {
-            console.error("Failed to insert user:", e);
-          }
-        } else if (existing[0].authId !== authId && authId) {
-          try {
-            await db
-              .update(users)
-              .set({ authId, login, updatedAt: Math.floor(Date.now() / 1000) })
-              .where(eq(users.githubId, githubId));
-          } catch (e) {
-            console.error("Failed to update user:", e);
-          }
-        }
-        return true;
-      },
-      async session({ session }) {
-        if (!session.user?.id) return session;
         const db = await makeDb();
         const u = await db
           .select()
           .from(users)
-          .where(eq(users.authId, session.user.id));
+          .where(eq(users.authId, user.id ?? ""));
+        if (u.length === 0) {
+          const v = {
+            githubId: String(profile.id),
+            authId: user.id || "",
+            login: String(profile.login),
+          };
+          try {
+            await db.insert(users).values(v);
+          } catch (e) {
+            console.log(e);
+          }
+        }
+        return true;
+      },
+      async session({ session, token }) {
+        if (token.githubId) {
+          session.user.id = token.githubId as string;
+        }
+        if (token.login) {
+          session.user.login = token.login as string;
+        }
+        const db = await makeDb();
+        const u = await db
+          .select()
+          .from(users)
+          .where(eq(users.githubId, session.user.id ?? ""));
         if (u.length > 0) {
           session.user.db = u[0];
         }

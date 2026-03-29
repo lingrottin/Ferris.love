@@ -3,11 +3,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { repoStats, repos } from "@/db/schema";
 import { makeDb } from "@/db/util";
 import {
-  COUNTS_LABELS,
   DEFAULT_SHOW,
   generateBadge,
   generatePlaceholderBadge,
 } from "@/lib/badge";
+import { COUNTS_LABELS_SHORT as COUNTS_LABELS } from "@/lib/utils";
 
 export async function GET(
   request: NextRequest,

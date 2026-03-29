@@ -29,6 +29,20 @@
       "when": 1774687947700,
       "tag": "0003_panoramic_wrecker",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1774765692836,
+      "tag": "0004_shiny_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1774765836644,
+      "tag": "0005_boring_mongoose",
+      "breakpoints": true
     }
   ]
 }

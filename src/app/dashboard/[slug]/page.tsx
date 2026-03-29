@@ -7,6 +7,7 @@ import type { Session } from "next-auth";
 import { MainPage } from "@/app/dashboard/[slug]/main_page";
 import { StatsPage } from "@/app/dashboard/[slug]/stats_page";
 import { auth, signOut } from "@/auth";
+import { AddRepoForm } from "@/components/AddRepository";
 import { Banner } from "@/components/Banner";
 import { NavigationItem } from "@/components/NavigationItem";
 import { TopBar } from "@/components/TopBar";
@@ -52,7 +53,7 @@ export default async function Dashboard({
 
   return (
     <>
-      <TopBar title={"Dashboard"}>
+      <TopBar className={"z-1"} title={"Dashboard"}>
         {/* <span>logged in as @{user.login || user.name}</span> */}
       </TopBar>
       {installation === null && (
@@ -109,9 +110,14 @@ export default async function Dashboard({
               <span className={"pb-1"}>{user.email}</span>
             </div>
           </div>
-          <div className={"md:flex-1 md:items-center md:justify-end flex"}>
+          <div
+            className={
+              "md:flex-1 md:items-center md:justify-end flex md:flex-row flex-col gap-2 pt-1 md:pt-0"
+            }
+          >
+            <AddRepoForm btnTitle={"Add Repository"} className={"w-auto"} />
             <form
-              className={"shrink w-full md:w-auto mt-1 md:mt-0"}
+              className={"shrink w-full md:w-auto"}
               action={async () => {
                 "use server";
                 await signOut();
@@ -120,14 +126,14 @@ export default async function Dashboard({
               <Button
                 variant="outline"
                 type="submit"
-                className="cursor-pointer w-full md:w-autp"
+                className="cursor-pointer w-full md:w-auto"
               >
                 Sign out
               </Button>
             </form>
           </div>
         </div>
-        <div className={"border-b-1"}></div>
+        <div className={"border-b"}></div>
         <div className={"flex flex-col md:flex-row"}>
           <div className={"md:flex-1"}>
             <NavigationItem

@@ -4,15 +4,18 @@ export function NumberCard({
   className,
   title,
   number,
+  fixedRow,
 }: {
   className?: string;
   title: string;
   number: string;
+  fixedRow?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "flex flex-row items-center xl:items-start xl:flex-col border-1 rounded-2xl p-5",
+        "flex flex-row items-center border rounded-2xl p-5",
+        !fixedRow && "xl:items-start xl:flex-col",
         className,
       )}
     >
