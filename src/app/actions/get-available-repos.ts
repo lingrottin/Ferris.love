@@ -6,19 +6,23 @@ import { agh } from "@/octokit";
 
 const getAvailableReposCached = unstable_cache(
   async (login: string) => {
-    const app = await agh();
-    const inst_id = (
-      await app.octokit.request("GET /users/{username}/installation", {
-        username: login,
-      })
-    ).data.id;
-    const inst = await app.getInstallationOctokit(inst_id);
+    try {
+      const app = await agh();
+      const inst_id = (
+        await app.octokit.request("GET /users/{username}/installation", {
+          username: login,
+        })
+      ).data.id;
+      const inst = await app.getInstallationOctokit(inst_id);
 
-    return (
-      await inst.request("GET /installation/repositories", {
-        headers: { "X-GitHub-Api-Version": "2026-03-10" },
-      })
-    ).data;
+      return (
+        await inst.request("GET /installation/repositories", {
+          headers: { "X-GitHub-Api-Version": "2026-03-10" },
+        })
+      ).data;
+    } catch {
+      return { total_count: 0, repositories: [] };
+    }
   },
   ["available-repos"],
   { revalidate: 300 },
