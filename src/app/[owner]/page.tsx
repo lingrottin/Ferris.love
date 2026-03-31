@@ -291,7 +291,11 @@ async function getGithubProfile(login: string, githubId: string) {
     });
     return byLogin.data as GithubProfile;
   } catch (e: unknown) {
-    if (e instanceof Error && "status" in e && (e as { status: number }).status === 403) {
+    if (
+      e instanceof Error &&
+      "status" in e &&
+      (e as { status: number }).status === 403
+    ) {
       console.warn("GitHub API rate limit exceeded for public user page");
     }
     const numericId = Number(githubId);

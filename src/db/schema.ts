@@ -49,7 +49,9 @@ export const repos = sqliteTable(
     lastScanAt: integer("last_scan_at"),
     scanError: text("scan_error"),
     webhookSecret: text("webhook_secret"),
-    webhookInstalled: integer("webhook_installed", { mode: "boolean" }).default(false),
+    webhookInstalled: integer("webhook_installed", { mode: "boolean" }).default(
+      false,
+    ),
     createdAt: integer("created_at").$defaultFn(nowSeconds),
   },
   (table) => [
