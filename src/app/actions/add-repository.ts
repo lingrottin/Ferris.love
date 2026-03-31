@@ -56,7 +56,12 @@ export async function addRepository(
   const app = await agh();
   const octokit = await app.getInstallationOctokit(installationId);
 
-  let repoData: { id: number; language: string | null; full_name: string };
+  let repoData: {
+    id: number;
+    language: string | null;
+    full_name: string;
+    private: boolean;
+  };
   try {
     const resp = await octokit.request("GET /repos/{owner}/{repo}", {
       owner,
@@ -66,6 +71,7 @@ export async function addRepository(
       id: resp.data.id,
       language: resp.data.language,
       full_name: resp.data.full_name,
+      private: resp.data.private,
     };
   } catch {
     return { ok: false, error: "Repository not found" };
@@ -111,7 +117,7 @@ export async function addRepository(
       githubRepoId,
       ownerLogin: owner,
       name: repoName,
-      isPrivate: false,
+      isPrivate: repoData.private ?? false,
       status: needsAnalysis ? "analyzing" : "done",
     });
   } else if (needsAnalysis) {
@@ -141,11 +147,8 @@ export async function addRepository(
 
   if (needsAnalysis) {
     const webhookSecret = crypto.randomUUID();
-    await db
-      .update(repos)
-      .set({ webhookSecret })
-      .where(eq(repos.githubRepoId, githubRepoId));
 
+    let webhookInstalled = false;
     try {
       await octokit.request("POST /repos/{owner}/{repo}/hooks", {
         owner,
@@ -157,9 +160,15 @@ export async function addRepository(
         },
         events: ["push"],
       });
+      webhookInstalled = true;
     } catch (e) {
-      console.warn("Webhook registration failed (may already exist):", e);
+      console.warn("Webhook registration failed (may already exist or no permission):", e);
     }
+
+    await db
+      .update(repos)
+      .set({ webhookSecret, webhookInstalled })
+      .where(eq(repos.githubRepoId, githubRepoId));
 
     await db.insert(repoStats).values({
       repoId: githubRepoId,
@@ -167,6 +176,12 @@ export async function addRepository(
       status: "analyzing",
       counts: "{}",
     });
+
+    const authResult = (await octokit.auth({
+      type: "installation",
+      installationId,
+    })) as { token: string };
+    const installationToken = authResult.token;
 
     const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
     try {
@@ -180,6 +195,7 @@ export async function addRepository(
           user: owner,
           repo: repoName,
           callback: callbackUrl,
+          token: installationToken,
         }),
       });
     } catch (e) {

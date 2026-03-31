@@ -29,6 +29,9 @@ export async function getRepoStats(
     .orderBy(sql`${repoStats.analyzedAt} DESC`)
     .limit(1)
     .then((rows) => rows[0] ?? null);
+
+  if (!stats) return null;
+
   return {
     ...stats,
     counts: JSON.parse(stats.counts) as Counts,

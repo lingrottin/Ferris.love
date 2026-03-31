@@ -40,5 +40,5 @@ export default async function MiniBadge(options: BadgeOptions) {
     "right-fg",
   );
   svg += ferris(5, 3, 14, 20);
-  return withSvgRoot(svg, 155, 20, "a");
+  return withSvgRoot(svg, w, 20, `${options.name} — ${lorc.toLocaleString()} Rust lines`);
 }

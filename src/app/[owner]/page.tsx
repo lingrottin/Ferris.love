@@ -280,9 +280,9 @@ export default async function PublicUserPage({
 }
 
 async function getGithubProfile(login: string, githubId: string) {
-  // don't use gh() here because we only want public data
-  // and gh() is authenticated as this App,
-  // which this endpoint does not support
+  // Using unauthenticated Octokit: agh() requires a GitHub App installation
+  // which may not exist for the viewed user. Unauthenticated rate limit is
+  // 60 req/hr — acceptable for public pages with cache headers.
   const octokit = new Octokit();
 
   try {
@@ -290,14 +290,16 @@ async function getGithubProfile(login: string, githubId: string) {
       username: login,
     });
     return byLogin.data as GithubProfile;
-  } catch {
+  } catch (e: unknown) {
+    if (e instanceof Error && "status" in e && (e as { status: number }).status === 403) {
+      console.warn("GitHub API rate limit exceeded for public user page");
+    }
     const numericId = Number(githubId);
     if (!Number.isNaN(numericId)) {
       try {
         const byId = await octokit.request("GET /user/{account_id}", {
           account_id: numericId,
         });
-        console.log(byId.data);
         return byId.data as GithubProfile;
       } catch {}
     }

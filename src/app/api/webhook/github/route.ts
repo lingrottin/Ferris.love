@@ -3,6 +3,15 @@ import { and, eq, ne } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { repoStats, repos } from "@/db/schema";
 import { makeDb } from "@/db/util";
+import { agh } from "@/octokit";
+
+async function getInstallationId(owner: string): Promise<number> {
+  const app = await agh();
+  const resp = await app.octokit.request("GET /users/{username}/installation", {
+    username: owner,
+  });
+  return resp.data.id;
+}
 
 async function verifyHmac(
   secret: string,
@@ -116,6 +125,21 @@ export async function POST(request: Request) {
     .set({ status: "analyzing" })
     .where(eq(repos.githubRepoId, repo.githubRepoId));
 
+  // Get installation token for Matthew to clone private repos
+  let installationToken: string | undefined;
+  try {
+    const installationId = await getInstallationId(owner);
+    const app = await agh();
+    const octokit = await app.getInstallationOctokit(installationId);
+    const authResult = (await octokit.auth({
+      type: "installation",
+      installationId,
+    })) as { token: string };
+    installationToken = authResult.token;
+  } catch (e) {
+    console.warn("Could not get installation token for Matthew:", e);
+  }
+
   // Call Matthew API
   const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
   try {
@@ -129,6 +153,7 @@ export async function POST(request: Request) {
         user: owner,
         repo: repoName,
         callback: callbackUrl,
+        ...(installationToken && { token: installationToken }),
       }),
     });
   } catch (e) {

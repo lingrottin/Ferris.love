@@ -112,6 +112,13 @@ export default async function RepoPage({
                   ? `Last analyzed ${dayjs.unix(repoStats?.analyzedAt).fromNow()} (${dayjs.unix(repoStats?.analyzedAt).format("YYYY-MM-DD HH:mm:ss")})`
                   : "Never analyzed"}
               </div>
+              {currentRepo && !currentRepo.webhookInstalled && (
+                <div className="mt-2 text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-3 py-2">
+                  Webhook is not installed for this repository. Stats will not
+                  update automatically on push. You can manually trigger a
+                  recount from the Settings page.
+                </div>
+              )}
             </div>
             <div
               className={
@@ -135,22 +142,22 @@ export default async function RepoPage({
             <NumberCard
               fixedRow
               title="Lines of Rust code"
-              number={repoStats?.lorc.toLocaleString() || "N/A"}
+              number={repoStats?.lorc?.toLocaleString() ?? "N/A"}
             />
             <NumberCard
               fixedRow
               title="Static function calls"
-              number={repoStats?.callFn.toLocaleString() || "N/A"}
+              number={repoStats?.callFn?.toLocaleString() ?? "N/A"}
             />
             <NumberCard
               fixedRow
               title="Method calls"
-              number={repoStats?.callMethod.toLocaleString() || "N/A"}
+              number={repoStats?.callMethod?.toLocaleString() ?? "N/A"}
             />
             <NumberCard
               fixedRow
               title="Variable declarations"
-              number={repoStats?.defVar.toLocaleString() || "N/A"}
+              number={repoStats?.defVar?.toLocaleString() ?? "N/A"}
             />
             <BadgeCustomizer
               owner={owner}

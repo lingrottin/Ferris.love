@@ -41,7 +41,7 @@ export default async function PublicRepoPage({
   const db = await makeDb();
   const currentRepo = await getRepo(owner, name, db);
 
-  if (!currentRepo) {
+  if (!currentRepo || currentRepo.isPrivate) {
     return (
       <>
         <TopBar title={"Repository"}></TopBar>
@@ -112,22 +112,22 @@ export default async function PublicRepoPage({
           <NumberCard
             fixedRow
             title="Lines of Rust code"
-            number={repoStats?.lorc.toLocaleString() || "N/A"}
+            number={repoStats?.lorc?.toLocaleString() ?? "N/A"}
           />
           <NumberCard
             fixedRow
             title="Static function calls"
-            number={repoStats?.callFn.toLocaleString() || "N/A"}
+            number={repoStats?.callFn?.toLocaleString() ?? "N/A"}
           />
           <NumberCard
             fixedRow
             title="Method calls"
-            number={repoStats?.callMethod.toLocaleString() || "N/A"}
+            number={repoStats?.callMethod?.toLocaleString() ?? "N/A"}
           />
           <NumberCard
             fixedRow
             title="Variable declarations"
-            number={repoStats?.defVar.toLocaleString() || "N/A"}
+            number={repoStats?.defVar?.toLocaleString() ?? "N/A"}
           />
 
           <div className={"font-bold text-xl"}>Detailed Analysis</div>
@@ -167,7 +167,7 @@ export default async function PublicRepoPage({
                   <TableRow>
                     <TableCell colSpan={2}>Total lines of Rust code</TableCell>
                     <TableCell className="text-right">
-                      {repoStats?.lorc.toLocaleString() || "N/A"}
+                      {repoStats?.lorc?.toLocaleString() ?? "N/A"}
                     </TableCell>
                   </TableRow>
                 </TableFooter>

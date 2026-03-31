@@ -126,6 +126,12 @@ export async function recount(): Promise<RecountResult> {
         })
         .where(eq(repos.githubRepoId, repo.repoId));
 
+      const authResult = (await installationOctokit.auth({
+        type: "installation",
+        installationId,
+      })) as { token: string };
+      const installationToken = authResult.token;
+
       const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${repo.owner}/${repo.name}`)}`;
       const matthewResp = await fetch(`${env.MATTHEW_URL}/api/count`, {
         method: "POST",
@@ -137,6 +143,7 @@ export async function recount(): Promise<RecountResult> {
           user: repo.owner,
           repo: repo.name,
           callback: callbackUrl,
+          token: installationToken,
         }),
       });
 
