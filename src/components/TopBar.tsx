@@ -10,7 +10,7 @@ export function TopBar(props: {
     <>
       <div
         className={cn(
-          "h-20 flex items-center border-b-1 fixed top-0 left-0 right-0 bg-background",
+          "h-20 flex items-center border-b fixed top-0 left-0 right-0 bg-background",
           props.className,
         )}
       >

@@ -1,10 +1,20 @@
 "use client";
 
+import { Copy } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CarTaxiFront, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -14,23 +24,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DEFAULT_SHOW } from "@/lib/badges";
 import { COUNTS_LABELS_LONG } from "@/lib/utils";
-import { DEFAULT_SHOW } from "@/lib/badge";
-import { toast } from "sonner";
 
 interface BadgeCustomizerProps {
   owner: string;
   name: string;
-  repo: string;
   lorc?: number | null;
   counts: Record<string, number>;
   base_url: string;
 }
 
+type RepoBadgeVariant = "horizontal" | "card" | "mini";
+
 export function BadgeCustomizer({
   owner,
   name,
-  repo,
   lorc,
   counts,
   base_url,
@@ -48,11 +57,26 @@ export function BadgeCustomizer({
     }
     return countEntries.slice(0, 5).map(([key]) => key);
   });
+  const [variant, setVariant] = useState<RepoBadgeVariant>("horizontal");
 
   const showParam = selectedKeys.join(",");
-  const previewSrc = `/badge/${repo}${showParam ? `?show=${encodeURIComponent(showParam)}` : ""}`;
-  const htmlSnippet = `<a href="${base_url}/${owner}/${name}"><img src="https://ferris.love/badge/${owner}/${name}${showParam ? `?show=${encodeURIComponent(showParam)}` : ""}" alt="Badge showing this repository's Rust code analysis"></a>`;
-  const markdownSnippet = `[![Ferris.love badge](${base_url}/badge/${owner}/${name}${showParam ? `?show=${encodeURIComponent(showParam)}` : ""})](https://ferris.love/${owner}/${name})`;
+  const badgePath = useMemo(() => {
+    const searchParams = new URLSearchParams();
+
+    if (showParam) {
+      searchParams.set("show", showParam);
+    }
+    if (variant !== "horizontal") {
+      searchParams.set("variant", variant);
+    }
+
+    const query = searchParams.toString();
+    return `/badge/${owner}/${name}${query ? `?${query}` : ""}`;
+  }, [owner, name, showParam, variant]);
+
+  const previewSrc = badgePath;
+  const htmlSnippet = `<a href="${base_url}/${owner}/${name}"><img src="${base_url}${badgePath}" alt="Badge showing this repository's Rust code analysis"></a>`;
+  const markdownSnippet = `[![Ferris.love badge](${base_url}${badgePath})](${base_url}/${owner}/${name})`;
 
   async function copyToClipboard(text: string) {
     if (!navigator?.clipboard) {
@@ -129,8 +153,9 @@ export function BadgeCustomizer({
           </div>
         </ScrollArea>
 
-        <div className={"flex flex-row justify-end"}>
+        <div className={"md:flex md:flex-row md:justify-end"}>
           <Button
+            className={"not-md:w-full"}
             onClick={() => setSelectedKeys([])}
             disabled={selectedKeys.length === 0}
             variant={"outline"}
@@ -149,52 +174,99 @@ export function BadgeCustomizer({
           and will be updated every time you push new commits.
         </div>
 
-        <div className={"border border-border rounded-lg p-4"}>
-          {/** biome-ignore lint/performance/noImgElement: <Image>'s optimization will mess up badge generation */}
-          <img
-            src={previewSrc}
-            alt="Rust code stats badge"
-            className={"w-auto"}
-          />
-          <div className={"text-sm text-muted-foreground mt-4"}>
-            Customize your badge by selecting up to 5 items in the table above.
+        <div className={"border border-border rounded-lg p-4 bg-muted"}>
+          <div className={"w-full text-center"}>
+            {/** biome-ignore lint/performance/noImgElement: <Image>'s optimization will mess up badge generation */}
+            <img
+              src={previewSrc}
+              alt="Rust code stats badge"
+              className={"w-auto inline"}
+            />
+          </div>
+          <div
+            className={
+              "mt-4 flex flex-col md:flex-row items-start md:items-center md:justify-between not-md:gap-2"
+            }
+          >
+            <div className={"text-sm text-muted-foreground"}>
+              Customize your badge by selecting up to 5 items in the table
+              above. (Mini variant does not show these items thus does not
+              support customizations.)
+            </div>
+            <Select
+              value={variant}
+              onValueChange={(value) => setVariant(value as RepoBadgeVariant)}
+            >
+              <SelectTrigger className="w-full md:w-65">
+                <SelectValue placeholder="Variant" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="horizontal">
+                    Horizontal (default)
+                  </SelectItem>
+                  <SelectItem value="card">Card</SelectItem>
+                  <SelectItem value="mini">Mini</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-        <div className={"text-sm font-bold"}>Use this badge</div>
+        <div className={"font-bold"}>Use this badge</div>
 
-        <ScrollArea
-          className={
-            "rounded-lg bg-muted p-4 text-sm mt-2 border-border border relative"
-          }
-        >
-          <code className={"block text-nowrap"}>{htmlSnippet}</code>
-          <Button
-            className={"absolute top-2 right-2 bg-muted! cursor-pointer"}
-            variant={"outline"}
-            size={"icon"}
-            onClick={() => copyToClipboard(htmlSnippet)}
+        <div className={"text-sm text-muted-foreground -mt-2"}>
+          Copy the code below to add the badge to your repository's README.
+        </div>
+
+        <div>
+          <div className={"text-xs text-bold"}>HTML</div>
+          <ScrollArea
+            className={
+              "rounded-lg bg-muted p-4 text-sm mt-2 border-border border relative"
+            }
           >
-            <Copy />
-          </Button>
-          <ScrollBar orientation="horizontal"></ScrollBar>
-        </ScrollArea>
-        <ScrollArea
-          className={
-            "rounded-lg bg-muted p-4 text-sm mt-2 border-border border relative"
-          }
-        >
-          <code className={"block text-nowrap"}>{markdownSnippet}</code>
-          <Button
-            className={"absolute top-2 right-2 bg-muted! cursor-pointer"}
-            variant={"outline"}
-            size={"icon"}
-            onClick={() => copyToClipboard(markdownSnippet)}
+            <code className={"block text-nowrap"}>{htmlSnippet}</code>
+            <Button
+              className={"absolute top-2 right-2 bg-muted! cursor-pointer"}
+              variant={"outline"}
+              size={"icon"}
+              onClick={() => copyToClipboard(htmlSnippet)}
+            >
+              <Copy />
+            </Button>
+            <ScrollBar orientation="horizontal"></ScrollBar>
+          </ScrollArea>
+        </div>
+        <div>
+          <div className={"text-xs text-bold"}>Markdown</div>
+
+          <ScrollArea
+            className={
+              "rounded-lg bg-muted p-4 text-sm mt-2 border-border border relative"
+            }
           >
-            <Copy />
-          </Button>
-          <ScrollBar orientation="horizontal"></ScrollBar>
-        </ScrollArea>
+            <code className={"block text-nowrap"}>{markdownSnippet}</code>
+            <Button
+              className={"absolute top-2 right-2 bg-muted! cursor-pointer"}
+              variant={"outline"}
+              size={"icon"}
+              onClick={() => copyToClipboard(markdownSnippet)}
+            >
+              <Copy />
+            </Button>
+            <ScrollBar orientation="horizontal"></ScrollBar>
+          </ScrollArea>
+        </div>
       </div>
     </div>
+  );
+}
+
+export function UseBadgeButton() {
+  "use client";
+  return (
+    <Button className={"not-md:hidden"} asChild>
+      <Link href="#badge-title">Use badge</Link>
+    </Button>
   );
 }

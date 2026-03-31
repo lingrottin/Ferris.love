@@ -1,7 +1,7 @@
-import { repos, repoStats, userRepos } from "@/db/schema";
+import { sql } from "drizzle-orm";
+import { repoStats, repos, userRepos } from "@/db/schema";
 import type { makeDb } from "@/db/util";
 import type { Counts } from "@/lib/utils";
-import { sql } from "drizzle-orm";
 
 export async function getRepo(
   owner: string,

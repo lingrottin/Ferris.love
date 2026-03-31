@@ -3,7 +3,7 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { addRepository } from "@/app/actions/add-repository";
 import { getAvailableRepos } from "@/app/actions/get-available-repos";
@@ -29,6 +29,7 @@ import {
 } from "./ui/alert-dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { ScrollArea } from "./ui/scroll-area";
 import { Spinner } from "./ui/spinner";
 
 export function AddRepoForm({
@@ -44,9 +45,10 @@ export function AddRepoForm({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [repos, setRepos] = useState<string[]>([]);
-  const [reposState, setReposState] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
+  const [reposState, setReposState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertOwner, setAlertOwner] = useState("");
@@ -61,34 +63,21 @@ export function AddRepoForm({
     normalizedInput.length > 0 &&
     filteredRepos.length === 0;
 
-  useEffect(() => {
-    let canceled = false;
+  async function loadRepos() {
+    if (reposState === "loading" || reposState === "ready") {
+      return;
+    }
 
-    (async () => {
-      try {
-        setReposState("loading");
-        const availableRepos = await getAvailableRepos();
-
-        if (canceled) {
-          return;
-        }
-
-        setRepos(availableRepos.repositories.map((r) => r.full_name));
-        setReposState("ready");
-      } catch {
-        if (canceled) {
-          return;
-        }
-
-        setRepos([]);
-        setReposState("error");
-      }
-    })();
-
-    return () => {
-      canceled = true;
-    };
-  }, []);
+    try {
+      setReposState("loading");
+      const availableRepos = await getAvailableRepos();
+      setRepos(availableRepos.repositories.map((r) => r.full_name));
+      setReposState("ready");
+    } catch {
+      setRepos([]);
+      setReposState("error");
+    }
+  }
 
   async function handleSubmit() {
     const repo = repoInput.trim();
@@ -127,7 +116,15 @@ export function AddRepoForm({
 
   return (
     <>
-      <Dialog>
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (open) {
+            void loadRepos();
+          }
+        }}
+      >
         <DialogTrigger asChild>
           <Button variant={"outline"} className={className}>
             {btnTitle ?? "Select repository"}
@@ -148,59 +145,61 @@ export function AddRepoForm({
               setIsSearching(true);
             }}
           />
-          <div
-            className={cn(
-              "p-2 border-2 rounded-md flex flex-col text-sm overflow-auto gap-1 max-h-[40dvh]",
-              reposState === "loading" && "items-center justify-center",
-            )}
-          >
-            {reposState === "loading" && <Spinner></Spinner>}
-            {reposState === "error" && (
-              <div className="p-2 text-muted-foreground">
-                Failed to load repositories.
-              </div>
-            )}
-            {reposState === "ready" && repos.length === 0 && (
-              <div className="p-2 text-muted-foreground">
-                Seems like you have no repositories or the app is not correctly
-                installed. Please go to the{" "}
-                <Link
-                  href="https://github.com/settings/installations"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  GitHub settings page
-                </Link>{" "}
-                and make sure you have installed the app on your account.
-              </div>
-            )}
-            {reposState === "ready" &&
-              repos.length > 0 &&
-              filteredRepos.map((r) => (
-                <button
-                  type={"button"}
-                  key={r}
-                  className={cn(
-                    "p-2 rounded-lg cursor-pointer text-start transition-colors hover:bg-secondary",
-                    r === repoInput.trim() &&
-                      "bg-green-100 text-green-600 not-dark:hover:bg-green-100/50 dark:bg-green-900/20 dark:text-green-200 flex flex-row items-center justify-between",
-                  )}
-                  onClick={() => {
-                    setRepoInput(r);
-                    setIsSearching(false);
-                  }}
-                >
-                  <span>{r}</span>
-                  {r === repoInput.trim() && <Check size={16} />}
-                </button>
-              ))}
-            {showSearchEmptyState && (
-              <div className="p-2 text-muted-foreground">
-                No repositories match your input.
-              </div>
-            )}
-          </div>
-          <div className="text-xs text-muted-foreground mt-2 text-justify">
+          <ScrollArea className={cn("p-2 border-2 rounded-md max-h-[40dvh]")}>
+            <div
+              className={cn(
+                "flex flex-col gap-1 text-sm",
+                reposState === "loading" && "items-center justify-center",
+              )}
+            >
+              {reposState === "loading" && <Spinner></Spinner>}
+              {reposState === "error" && (
+                <div className="p-2 text-muted-foreground">
+                  Failed to load repositories.
+                </div>
+              )}
+              {reposState === "ready" && repos.length === 0 && (
+                <div className="p-2 text-muted-foreground">
+                  Seems like you have no repositories or the app is not
+                  correctly installed. Please go to the{" "}
+                  <Link
+                    href="https://github.com/settings/installations"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GitHub settings page
+                  </Link>{" "}
+                  and make sure you have installed the app on your account.
+                </div>
+              )}
+              {reposState === "ready" &&
+                repos.length > 0 &&
+                filteredRepos.map((r) => (
+                  <button
+                    type={"button"}
+                    key={r}
+                    className={cn(
+                      "p-2 rounded-lg cursor-pointer text-start transition-colors hover:bg-secondary",
+                      r === repoInput.trim() &&
+                        "bg-green-100 text-green-600 not-dark:hover:bg-green-100/50 dark:hover:bg-green-900/30 dark:bg-green-900/20 dark:text-green-200 flex flex-row items-center justify-between",
+                    )}
+                    onClick={() => {
+                      setRepoInput(r);
+                      setIsSearching(false);
+                    }}
+                  >
+                    <span>{r}</span>
+                    {r === repoInput.trim() && <Check size={16} />}
+                  </button>
+                ))}
+              {showSearchEmptyState && (
+                <div className="p-2 text-muted-foreground">
+                  No repositories match your input.
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+          <div className="text-xs text-muted-foreground mt-2 text-pretty text-start md:text-justify hyphens-auto">
             By adding a repository, you acknowledge and agree to share its data
             with Ferris.love for analysis, and to allow Ferris.love to add a
             webhook to your repository. Ferris.love will only read the Rust code

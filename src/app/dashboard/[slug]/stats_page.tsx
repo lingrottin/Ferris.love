@@ -1,13 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { Pie, PieChart } from "recharts";
+import { toast } from "sonner";
 import { type GetStatsResult, getStats } from "@/app/actions/get-stats";
 import { NumberCard } from "@/components/NumberCard";
-import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { Pie, PieChart } from "recharts";
-
 import {
   Card,
   CardContent,
@@ -17,15 +16,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  type ChartConfig,
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
 } from "@/components/ui/chart";
-import { useSession } from "next-auth/react";
-import Link from "next/link";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { UserBadgeSelect } from "./UserBadgeSelect";
 
 // 从浅到深的橙色，第一个颜色来自最知名的 Ferris 图
 const colors = [
@@ -130,7 +130,7 @@ export function Chart({
   );
 }
 
-export function StatsPage() {
+export function StatsPage({ baseUrl }: { baseUrl: string }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<GetStatsResult | null>(null);
   const session = useSession().data;
@@ -177,6 +177,11 @@ export function StatsPage() {
                   : "N/A"
               }
             ></NumberCard>
+            <UserBadgeSelect
+              userName={session?.user.login ?? ""}
+              baseUrl={baseUrl}
+              className={"xl:col-span-3"}
+            ></UserBadgeSelect>
           </div>
           <div className={"mt-4 grid grid-cols-1 xl:grid-cols-2 gap-3"}>
             <Chart

@@ -6,7 +6,7 @@ import {
   DEFAULT_SHOW,
   generateBadge,
   generatePlaceholderBadge,
-} from "@/lib/badge";
+} from "@/lib/badges";
 import { COUNTS_LABELS_SHORT as COUNTS_LABELS } from "@/lib/utils";
 
 export async function GET(
@@ -23,7 +23,7 @@ export async function GET(
     .where(and(eq(repos.ownerLogin, owner), eq(repos.name, repoName)));
 
   if (repoRecords.length === 0) {
-    const svg = generatePlaceholderBadge(`${owner}/${repoName}`);
+    const svg = await generatePlaceholderBadge();
     return new NextResponse(svg, {
       headers: {
         "Content-Type": "image/svg+xml",
@@ -48,7 +48,7 @@ export async function GET(
     .limit(1);
 
   if (stats.length === 0) {
-    const svg = generatePlaceholderBadge(`${owner}/${repoName}`);
+    const svg = await generatePlaceholderBadge();
     return new NextResponse(svg, {
       headers: {
         "Content-Type": "image/svg+xml",
@@ -63,7 +63,7 @@ export async function GET(
   // Parse show param
   const showParam = url.searchParams.get("show");
   const showKeys = showParam ? showParam.split(",").slice(0, 5) : DEFAULT_SHOW;
-  const theme = url.searchParams.get("theme") as "dark" | "light" | null;
+  const variantParam = url.searchParams.get("variant");
 
   // Parse counts
   let counts: Record<string, number> = {};
@@ -80,12 +80,15 @@ export async function GET(
       label: COUNTS_LABELS[key],
       value: counts[key] ?? 0,
     }));
-
-  const svg = generateBadge({
+  let variant = "horizontal";
+  if (["card", "mini", "horizontal"].includes(variantParam ?? "")) {
+    variant = variantParam ?? "horizontal";
+  }
+  const svg = await generateBadge({
     lorc: stat.lorc,
     metrics,
-    repoName: `${owner}/${repoName}`,
-    theme: theme || undefined,
+    name: `${owner}/${repoName}`,
+    variant,
   });
 
   return new NextResponse(svg, {

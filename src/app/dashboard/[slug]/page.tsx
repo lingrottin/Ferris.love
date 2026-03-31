@@ -158,9 +158,7 @@ export default async function Dashboard({
               Settings
             </NavigationItem>
           </div>
-          <div
-            className={"border-b-1 mt-3 mb-3 md:mb-0 md:mt-0 md:hidden"}
-          ></div>
+          <div className={"border-b mt-3 mb-3 md:mb-0 md:mt-0 md:hidden"}></div>
           <div className={"md:flex-2 xl:flex-3 md:ml-5"}>
             {slug === "main" && (
               <MainPage
@@ -169,7 +167,7 @@ export default async function Dashboard({
                 session={session}
               ></MainPage>
             )}
-            {slug === "stats" && <StatsPage></StatsPage>}
+            {slug === "stats" && <StatsPage baseUrl={env.BASE_URL}></StatsPage>}
             {slug === "settings" && <SettingsPage></SettingsPage>}
           </div>
         </div>

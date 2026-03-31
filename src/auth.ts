@@ -2,7 +2,7 @@ import { D1Adapter, up } from "@auth/d1-adapter";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq, type InferSelectModel } from "drizzle-orm";
 import NextAuth, { type DefaultSession } from "next-auth";
-import GitHub from "next-auth/providers/github";
+import authConfig from "@/auth.config";
 import { users } from "@/db/schema";
 import { makeDb } from "@/db/util";
 
@@ -44,32 +44,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
   await ensureDbMigrated(env);
 
   return {
-    providers: [
-      GitHub({
-        profile(profile) {
-          return {
-            id: String(profile.id),
-            login: profile.login as string,
-            name: profile.name ?? profile.login,
-            email: profile.email,
-            image: profile.avatar_url,
-          };
-        },
-      }),
-    ],
+    ...authConfig,
     adapter: D1Adapter(env.DB_AUTH),
     session: { strategy: "jwt" },
     callbacks: {
-      async jwt({ token, profile, user }) {
-        if (profile) {
-          token.githubId = String(profile.id);
-          token.login = profile.login as string;
-        }
-        if (user?.id) {
-          token.sub = user.id;
-        }
-        return token;
-      },
+      ...(authConfig.callbacks ?? {}),
       async signIn({ profile, user }) {
         if (!profile) return false;
         const db = await makeDb();

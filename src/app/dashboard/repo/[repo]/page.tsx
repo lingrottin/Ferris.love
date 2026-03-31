@@ -1,39 +1,34 @@
-import { auth } from "@/auth";
-import { TopBar } from "@/components/TopBar";
-import { makeDb } from "@/db/util";
-import type { Session } from "next-auth";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import * as dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { ArrowLeft, X } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getRepo, verifyRepoRelationship, getRepoStats } from "./util";
+import type { Session } from "next-auth";
+import { auth } from "@/auth";
+import { NumberCard } from "@/components/NumberCard";
+import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
+  EmptyContent,
+  EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
 } from "@/components/ui/empty";
-import { ArrowLeft, Trash2, X } from "lucide-react";
-import Link from "next/link";
+import { makeDb } from "@/db/util";
 import { cn } from "@/lib/utils";
-import * as dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
-import { NumberCard } from "@/components/NumberCard";
-import { BadgeCustomizer } from "./BadgeCustomizer";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { BadgeCustomizer, UseBadgeButton } from "./BadgeCustomizer";
+import { RemoveRepositoryButton } from "./RemoveRepositoryButton";
+import { getRepo, getRepoStats, verifyRepoRelationship } from "./util";
+
 dayjs.extend(relativeTime);
 
 export default async function RepoPage({
   params,
-  _searchParams,
 }: {
   params: Promise<{ repo: string }>;
-  _searchParams: Promise<{ [_: string]: string | string[] | undefined }>;
 }) {
   const repo = decodeURIComponent((await params).repo).replace(":", "/");
   const [owner, name] = repo.split("/");
@@ -124,24 +119,13 @@ export default async function RepoPage({
               }
             >
               <div className={"flex gap-2 flex-row not-md:w-full"}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size={"icon"}>
-                      <Trash2 />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Remove this repository</p>
-                  </TooltipContent>
-                </Tooltip>
+                <RemoveRepositoryButton repo={repo} />
                 <Button asChild className={"flex-1"} variant="outline">
                   <Link href={`https://github.com/${repo}`}>GitHub page</Link>
                 </Button>
               </div>
 
-              <Button className={"not-md:hidden"} asChild>
-                <Link href={"#badge-title"}>Use badge</Link>
-              </Button>
+              <UseBadgeButton></UseBadgeButton>
             </div>
           </div>
           <div className={"border-border border-b mt-4 mb-4"}></div>
@@ -171,7 +155,6 @@ export default async function RepoPage({
             <BadgeCustomizer
               owner={owner}
               name={name}
-              repo={repo}
               lorc={repoStats?.lorc}
               counts={repoStats?.counts ?? {}}
               base_url={ctx.env.BASE_URL || "https://ferris.love"}
@@ -219,6 +202,15 @@ function NotRelated({ repo }: { repo: string }) {
         "flex flex-col md:ml-15 md:mr-15 xl:ml-50 xl:mr-50 ml-10 mr-10 mt-10"
       }
     >
+      <Link
+        href="/dashboard/main"
+        className={
+          "flex flex-row items-center text-sm text-muted-foreground mb-4 gap-2"
+        }
+      >
+        <ArrowLeft className={"inline"} size={14} />
+        Back
+      </Link>
       <div className={"flex flex-row items-center"}>
         <h1 className={"text-2xl font-bold"}>{repo}</h1>
       </div>
@@ -229,7 +221,7 @@ function NotRelated({ repo }: { repo: string }) {
               <X />
             </EmptyMedia>
             <EmptyTitle>Not Found</EmptyTitle>
-            <EmptyDescription className="max-w-xs text-pretty">
+            <EmptyDescription className="max-w-xs text-pretty hyphens-auto">
               It seems that Ferris.love don't have information about {repo}, or
               it is not associated with your account. Please make sure you have
               added the repository to Ferris.love and try again.
