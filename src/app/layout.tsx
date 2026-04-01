@@ -12,11 +12,12 @@ export const metadata: Metadata = {
   description: "Show how you love Ferris",
 };
 
-const _roboto_mono = LocalFont({
-  src: "./fonts/Roboto_Mono/RobotoMono-VariableFont_wght.ttf",
-  variable: "--font-roboto-mono",
+const adwaita_mono = LocalFont({
+  src: "./fonts/AdwaitaMono/AdwaitaMono-Regular.ttf",
+  weight: "400",
+  variable: "--font-adwaita-mono",
 });
-const _inter = LocalFont({
+const inter = LocalFont({
   src: [
     {
       path: "./fonts/Inter/Inter-VariableFont_opsz,wght.ttf",
@@ -40,8 +41,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${_roboto_mono.variable} ${_inter.variable} antialiased`}
+      className={`${adwaita_mono.variable} ${inter.variable} antialiased`}
     >
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/logo.svg"></link>
+      </head>
       <body className={"bg-background text-foreground"}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TooltipProvider>

@@ -5,6 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { auth } from "@/auth";
 import { repoStats, repos, userRepos } from "@/db/schema";
 import { makeDb } from "@/db/util";
+import { consumeRateLimit, formatRetryAfter } from "@/lib/rate-limit";
 import { agh } from "@/octokit";
 
 type AddRepositoryResult =
@@ -44,6 +45,18 @@ export async function addRepository(
   const [owner, repoName] = parts;
 
   const { env } = await getCloudflareContext({ async: true });
+  const rateLimit = await consumeRateLimit({
+    env,
+    key: `add-repo:${session.user.db.githubId}`,
+    limit: 30,
+    windowSeconds: 60 * 60,
+  });
+  if (!rateLimit.ok) {
+    return {
+      ok: false,
+      error: `Rate limit exceeded. Try again in ${formatRetryAfter(rateLimit.retryAfterSeconds)}.`,
+    };
+  }
   const db = await makeDb();
 
   let hasInstallation = true;

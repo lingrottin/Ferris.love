@@ -1,9 +1,10 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { recountSingle } from "@/app/actions/recount";
 import { removeRepository } from "@/app/actions/remove-repository";
 import {
   AlertDialog,
@@ -81,5 +82,45 @@ export function RemoveRepositoryButton({ repo }: { repo: string }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+export function RecountButton({ repo }: { repo: string }) {
+  const router = useRouter();
+  const [isRecounting, startRecount] = useTransition();
+
+  function onRecount() {
+    startRecount(async () => {
+      try {
+        const result = await recountSingle(repo);
+        if (!result.ok) {
+          toast.error(result.error || "Failed to trigger recount");
+          return;
+        }
+
+        toast.success("Recount queued.");
+        router.refresh();
+      } catch {
+        toast.error("Network error, please try again");
+      }
+    });
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={isRecounting}
+          onClick={onRecount}
+        >
+          {isRecounting ? <Spinner /> : <RotateCcw />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Recount this repository</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }

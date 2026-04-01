@@ -20,7 +20,10 @@ import {
 import { makeDb } from "@/db/util";
 import { cn } from "@/lib/utils";
 import { BadgeCustomizer, UseBadgeButton } from "./BadgeCustomizer";
-import { RemoveRepositoryButton } from "./RemoveRepositoryButton";
+import {
+  RecountButton,
+  RemoveRepositoryButton,
+} from "./RemoveRepositoryButton";
 import { getRepo, getRepoStats, verifyRepoRelationship } from "./util";
 
 dayjs.extend(relativeTime);
@@ -58,7 +61,7 @@ export default async function RepoPage({
 
   return (
     <>
-      <TopBar title={"Repository"} className={"z-114514"}>
+      <TopBar title={"Repository"} className={"z-1"} href={"/dashboard"}>
         <span className={"text-muted-foreground text-sm"}>
           logged in as{" "}
           <span className={"text-foreground"}>@{user.login || user.name}</span>
@@ -79,6 +82,12 @@ export default async function RepoPage({
             <ArrowLeft className={"inline"} size={14} />
             Back
           </Link>
+          {currentRepo && !currentRepo.webhookInstalled && (
+            <div className="mt-2 text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-3 py-2 mb-4">
+              Webhook is not installed for this repository. Stats will not
+              update automatically on push. You can manually trigger a recount.
+            </div>
+          )}
           <div
             className={
               "flex flex-col md:flex-row items-start md:items-center md:justify-between"
@@ -112,13 +121,6 @@ export default async function RepoPage({
                   ? `Last analyzed ${dayjs.unix(repoStats?.analyzedAt).fromNow()} (${dayjs.unix(repoStats?.analyzedAt).format("YYYY-MM-DD HH:mm:ss")})`
                   : "Never analyzed"}
               </div>
-              {currentRepo && !currentRepo.webhookInstalled && (
-                <div className="mt-2 text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-3 py-2">
-                  Webhook is not installed for this repository. Stats will not
-                  update automatically on push. You can manually trigger a
-                  recount from the Settings page.
-                </div>
-              )}
             </div>
             <div
               className={
@@ -127,6 +129,7 @@ export default async function RepoPage({
             >
               <div className={"flex gap-2 flex-row not-md:w-full"}>
                 <RemoveRepositoryButton repo={repo} />
+                <RecountButton repo={repo} />
                 <Button asChild className={"flex-1"} variant="outline">
                   <Link href={`https://github.com/${repo}`}>GitHub page</Link>
                 </Button>

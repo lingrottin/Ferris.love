@@ -53,7 +53,7 @@ export default async function Dashboard({
 
   return (
     <>
-      <TopBar className={"z-1"} title={"Dashboard"}>
+      <TopBar className={"z-1"} title={"Dashboard"} href={"/dashboard"}>
         {/* <span>logged in as @{user.login || user.name}</span> */}
       </TopBar>
       {installation === null && (

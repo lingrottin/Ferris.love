@@ -1,40 +1,55 @@
 "use server";
 
-import { unstable_cache } from "next/cache";
-import { auth } from "@/auth";
 import { agh } from "@/octokit";
 
-const getAvailableReposCached = unstable_cache(
-  async (login: string) => {
-    try {
-      const app = await agh();
-      const inst_id = (
-        await app.octokit.request("GET /users/{username}/installation", {
-          username: login,
-        })
-      ).data.id;
-      const inst = await app.getInstallationOctokit(inst_id);
+const PER_PAGE = 50;
 
-      return (
-        await inst.request("GET /installation/repositories", {
-          headers: { "X-GitHub-Api-Version": "2026-03-10" },
-        })
-      ).data;
-    } catch {
-      return { total_count: 0, repositories: [] };
-    }
-  },
-  ["available-repos"],
-  { revalidate: 300 },
-);
-
-export async function getAvailableRepos() {
-  const session = await auth();
-  const login = session?.user.login;
+export async function getAvailableRepos(
+  login: string | null | undefined,
+  page = 1,
+) {
+  "use cache";
 
   if (!login) {
-    return { repositories: [] };
+    return {
+      total_count: 0,
+      repositories: [],
+      page,
+      per_page: PER_PAGE,
+      has_more: false,
+    };
   }
 
-  return getAvailableReposCached(login);
+  try {
+    const app = await agh();
+    const inst_id = (
+      await app.octokit.request("GET /users/{username}/installation", {
+        username: login,
+      })
+    ).data.id;
+    const inst = await app.getInstallationOctokit(inst_id);
+
+    const data = (
+      await inst.request("GET /installation/repositories", {
+        headers: { "X-GitHub-Api-Version": "2026-03-10" },
+        per_page: PER_PAGE,
+        page,
+      })
+    ).data;
+
+    return {
+      ...data,
+      page,
+      per_page: PER_PAGE,
+      has_more: page * PER_PAGE < data.total_count,
+    };
+  } catch {
+    return {
+      total_count: 0,
+      repositories: [],
+      page,
+      per_page: PER_PAGE,
+      has_more: false,
+    };
+  }
 }

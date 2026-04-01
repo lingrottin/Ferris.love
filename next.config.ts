@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
     ],
   },
   allowedDevOrigins: ["development.ferris.love", "127.0.0.1"],
+  experimental: {
+    useCache: true,
+  },
 };
 
 export default nextConfig;

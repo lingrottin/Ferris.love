@@ -1,10 +1,24 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import type * as React from "react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { recount } from "@/app/actions/recount";
+import { unregisterAccount } from "@/app/actions/unregister";
 import { AddRepoForm } from "@/components/AddRepository";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
@@ -51,6 +65,8 @@ function Item({
 
 export function SettingsPage() {
   const [isRecounting, startRecount] = useTransition();
+  const [isUnregistering, startUnregister] = useTransition();
+  const router = useRouter();
 
   function handleRecount() {
     startRecount(async () => {
@@ -80,6 +96,25 @@ export function SettingsPage() {
     });
   }
 
+  function handleUnregister() {
+    startUnregister(async () => {
+      try {
+        const result = await unregisterAccount();
+        if (!result.ok) {
+          toast.error(result.error || "Failed to unregister account");
+          return;
+        }
+
+        const message =
+          "You may need to uninstall this App completely at https://github.com/settings/installations";
+        await signOut({ redirect: false });
+        router.push(`/?error=true&message=${encodeURIComponent(message)}`);
+      } catch {
+        toast.error("Network error, please try again");
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col">
       <Item
@@ -103,14 +138,49 @@ export function SettingsPage() {
         }
       />
       <Item
-        name="Uninstall ferris.love"
-        desc="Uninstall ferris.love from your GitHub account and delete your data held by us"
-        right={<Button variant="destructive">Uninstall</Button>}
+        name="Unregister your account"
+        desc="Remove your account on Ferris.love and delete your data"
+        right={
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={isUnregistering}>
+                {isUnregistering && <Spinner />}
+                Unregister
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Unregister your account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will remove all your repository links and delete any
+                  repositories that no longer have linked users.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isUnregistering}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  onClick={handleUnregister}
+                  disabled={isUnregistering}
+                >
+                  {isUnregistering && <Spinner />}
+                  Unregister
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        }
       />
       <Item
         name="Sponsor"
         desc="Support the development of ferris.love"
-        right={<Button variant="outline">Sponsor</Button>}
+        right={
+          <Button variant="outline" disabled>
+            Sponsor
+          </Button>
+        }
         final
       />
     </div>

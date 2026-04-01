@@ -48,6 +48,9 @@ export function AddRepoForm({
   const [reposState, setReposState] = useState<
     "idle" | "loading" | "ready" | "error"
   >("idle");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -70,12 +73,52 @@ export function AddRepoForm({
 
     try {
       setReposState("loading");
-      const availableRepos = await getAvailableRepos();
+      setIsLoadingMore(false);
+      setPage(1);
+      setHasMore(false);
+      const login = session?.user.login;
+      if (!login) {
+        setRepos([]);
+        setReposState("ready");
+        return;
+      }
+      const availableRepos = await getAvailableRepos(login, 1);
       setRepos(availableRepos.repositories.map((r) => r.full_name));
+      setHasMore(availableRepos.has_more);
       setReposState("ready");
     } catch {
       setRepos([]);
       setReposState("error");
+    }
+  }
+
+  async function loadMoreRepos() {
+    if (isLoadingMore || !hasMore || reposState !== "ready") {
+      return;
+    }
+
+    setIsLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const login = session?.user.login;
+      if (!login) {
+        setHasMore(false);
+        return;
+      }
+      const availableRepos = await getAvailableRepos(login, nextPage);
+      setRepos((prev) => {
+        const next = new Set(prev);
+        for (const repo of availableRepos.repositories) {
+          next.add(repo.full_name);
+        }
+        return Array.from(next);
+      });
+      setPage(availableRepos.page);
+      setHasMore(availableRepos.has_more);
+    } catch {
+      setHasMore(false);
+    } finally {
+      setIsLoadingMore(false);
     }
   }
 
@@ -145,7 +188,20 @@ export function AddRepoForm({
               setIsSearching(true);
             }}
           />
-          <ScrollArea className={cn("p-2 border-2 rounded-md max-h-[40dvh]")}>
+          <ScrollArea
+            className={cn("p-2 border-2 rounded-md max-h-[40dvh]")}
+            viewportProps={{
+              onScroll: (event) => {
+                const target = event.currentTarget;
+                const isAtBottom =
+                  target.scrollTop + target.clientHeight >=
+                  target.scrollHeight - 24;
+                if (isAtBottom) {
+                  void loadMoreRepos();
+                }
+              },
+            }}
+          >
             <div
               className={cn(
                 "flex flex-col gap-1 text-sm",
@@ -192,6 +248,11 @@ export function AddRepoForm({
                     {r === repoInput.trim() && <Check size={16} />}
                   </button>
                 ))}
+              {reposState === "ready" && hasMore && (
+                <div className="flex items-center justify-center p-2">
+                  <Spinner></Spinner>
+                </div>
+              )}
               {showSearchEmptyState && (
                 <div className="p-2 text-muted-foreground">
                   No repositories match your input.

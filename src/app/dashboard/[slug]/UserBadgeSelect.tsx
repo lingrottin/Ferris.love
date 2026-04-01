@@ -32,8 +32,8 @@ export function UserBadgeSelect({
 }) {
   const [variant, setVariant] = useState<UserBadgeVariant>("card");
 
-  const htmlSnippet = `<img src="${baseUrl}/badge/${userName}?variant=${variant}" alt="Rust code stats badge" />`;
-  const markdownSnippet = `![Rust code stats badge](${baseUrl}/badge/${userName}?variant=${variant})`;
+  const htmlSnippet = `<a href="${baseUrl}/u/${userName}"><img src="${baseUrl}/badge/${userName}?variant=${variant}" alt="Rust code stats badge" /></a>`;
+  const markdownSnippet = `[![Rust code stats badge](${baseUrl}/badge/${userName}?variant=${variant})](${baseUrl}/u/${userName})`;
 
   function copyToClipboard(text: string): void {
     navigator.clipboard
