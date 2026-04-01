@@ -1,11 +1,48 @@
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+
+function StatusIndicator({
+  status,
+}: {
+  status: "queued" | "analyzing" | "done" | "failed";
+}) {
+  const colors: Record<string, string> = {
+    queued: "bg-yellow-400",
+    analyzing: "bg-blue-400 animate-pulse",
+    done: "bg-green-500",
+    failed: "bg-red-500",
+  };
+  const labels: Record<string, string> = {
+    queued: "Analysis queued",
+    analyzing: "Analyzing",
+    done: "Up to date",
+    failed: "Last analysis failed",
+  };
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn("inline-block w-2 h-2 rounded-full", colors[status])}
+        />
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{labels[status]}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 export function RepoCard(props: {
   username: string;
   repo: string;
   lorc: number;
   lastUpdated: string;
+  status?: "queued" | "analyzing" | "done" | "failed";
   className?: string;
 }) {
   return (
@@ -16,15 +53,18 @@ export function RepoCard(props: {
         props.className,
       )}
     >
-      <div className={"text-lg mb-2"}>
-        {props.username} / <span className={"font-bold"}>{props.repo}</span>
+      {/* <div className="flex items-center justify-between mb-2"> */}
+      <div className="text-lg">
+        {props.username} / <span className="font-bold">{props.repo}</span>
       </div>
-      <div className={"mt-auto"}>
-        <div className={"text-sm"}>
-          Total LoRC: <span className={""}>{props.lorc}</span>
+      {/* </div> */}
+      <div className="mt-auto">
+        <div className="text-sm">
+          Total LoRC: <span>{props.lorc}</span>
         </div>
-        <div className={"text-sm text-gray-500"}>
+        <div className="flex flex-row items-center justify-between text-sm text-muted-foreground">
           Last updated {props.lastUpdated}
+          <StatusIndicator status={props.status || "done"} />
         </div>
       </div>
     </Link>

@@ -20,7 +20,6 @@ export async function getUserRepos(
   page: number,
 ) {
   const m = (page - 1) * 15;
-  const n = page * 15;
 
   // ① 最新一次分析记录（带 ROW_NUMBER）
   const latestStats = db.$with("latest_stats").as(
@@ -44,6 +43,7 @@ export async function getUserRepos(
         repoId: repos.githubRepoId,
         ownerLogin: repos.ownerLogin,
         name: repos.name,
+        status: repos.status,
         lorc: sql<number>`COALESCE(${latestStats.lorc}, 0)`.as("lorc"),
         analyzedAt: latestStats.analyzedAt,
         totalCount: sql<number>`COUNT(*) OVER ()`.as("total_count"),
@@ -56,7 +56,7 @@ export async function getUserRepos(
       )
       .where(sql`${userRepos.userId} = ${githubId}`)
       .orderBy(sql`${repos.createdAt} DESC`)
-      .limit(n - m + 1)
+      .limit(15)
       .offset(m),
   );
 
@@ -68,6 +68,7 @@ export async function getUserRepos(
     repoId: r.repoId,
     ownerLogin: r.ownerLogin,
     name: r.name,
+    status: r.status,
     lorc: r.lorc,
     analyzedAt: r.analyzedAt,
   }));

@@ -1,7 +1,7 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
-const _ = initOpenNextCloudflareForDev();
+initOpenNextCloudflareForDev();
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
         hostname: "avatars.githubusercontent.com",
       },
     ],
+  },
+  allowedDevOrigins: ["development.ferris.love", "127.0.0.1"],
+  experimental: {
+    useCache: true,
   },
 };
 

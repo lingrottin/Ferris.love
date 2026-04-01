@@ -4,11 +4,10 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "my-next-app",
+  "name": "ferris-love",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2025-03-01",
+  "compatibility_date": "2026-04-01",
   "compatibility_flags": [
-    "nodejs_compat",
     "nodejs_compat_v2",
     "global_fetch_strictly_public"
   ],
@@ -19,7 +18,6 @@
   "observability": {
     "enabled": true
   },
-
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
@@ -48,6 +46,19 @@
     {
       "binding": "KV",
       "id": "kvRoot"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "ferris-love"
+    }
+  ],
+  "vpc_services": [
+    {
+      "binding": "MATTHEW_VPC",
+      "service_id": "{{MATTHEW_VPC_ID}}",
+      "remote": true
     }
   ]
   /**

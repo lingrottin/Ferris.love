@@ -22,6 +22,34 @@
       "when": 1761414491119,
       "tag": "0002_mature_falcon",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1774687947700,
+      "tag": "0003_panoramic_wrecker",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1774765692836,
+      "tag": "0004_shiny_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1774765836644,
+      "tag": "0005_boring_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1775145600000,
+      "tag": "0006_add_webhook_installed",
+      "breakpoints": true
     }
   ]
 }

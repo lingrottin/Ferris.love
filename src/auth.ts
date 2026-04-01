@@ -2,13 +2,15 @@ import { D1Adapter, up } from "@auth/d1-adapter";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { eq, type InferSelectModel } from "drizzle-orm";
 import NextAuth, { type DefaultSession } from "next-auth";
-import GitHub from "next-auth/providers/github";
+import authConfig from "@/auth.config";
 import { users } from "@/db/schema";
 import { makeDb } from "@/db/util";
 
 declare module "next-auth" {
   interface Session {
     user: {
+      id: string;
+      login?: string;
       db?: InferSelectModel<typeof users>;
     } & DefaultSession["user"];
   }
@@ -37,16 +39,16 @@ async function ensureDbMigrated(env: CloudflareEnv): Promise<void> {
   return _migrationPromise;
 }
 
-// biome-ignore lint/suspicious/noTsIgnore : idk why ts is mad
-// @ts-ignore
 export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
   const { env } = getCloudflareContext();
   await ensureDbMigrated(env);
 
   return {
-    providers: [GitHub],
+    ...authConfig,
     adapter: D1Adapter(env.DB_AUTH),
+    session: { strategy: "jwt" },
     callbacks: {
+      ...(authConfig.callbacks ?? {}),
       async signIn({ profile, user }) {
         if (!profile) return false;
         const db = await makeDb();
@@ -55,15 +57,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
           .from(users)
           .where(eq(users.authId, user.id ?? ""));
         if (u.length === 0) {
-          //biome-ignore-start lint/style/noNonNullAssertion: they exist!
           const v = {
-            githubId: profile.id!,
+            githubId: String(profile.id),
             authId: user.id || "",
-            // there is a mysterious problem that TypeScript assumes profile.login as {}
-            // but it is a number
-            login: (profile.login! as unknown as number).toString(10),
+            login: String(profile.login),
           };
-          //biome-ignore-end lint/style/noNonNullAssertion: why an end statement should have an explanation???
           try {
             await db.insert(users).values(v);
           } catch (e) {
@@ -72,18 +70,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth(async (_) => {
         }
         return true;
       },
-      async session({ session }) {
+      async session({ session, token }) {
+        if (token.githubId) {
+          session.user.id = token.githubId as string;
+        }
+        if (token.login) {
+          session.user.login = token.login as string;
+        }
         const db = await makeDb();
         const u = await db
           .select()
           .from(users)
-          .where(eq(users.authId, session.user.id ?? ""));
-        if (u.length === 0) {
-          return session;
+          .where(eq(users.githubId, session.user.id ?? ""));
+        if (u.length > 0) {
+          session.user.db = u[0];
         }
-        const s = session;
-        s.user.db = u[0];
-        return s;
+        return session;
       },
     },
   };

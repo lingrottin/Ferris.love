@@ -3,6 +3,7 @@ import { BookX, CircleOff } from "lucide-react";
 import Link from "next/link";
 import type { Session } from "next-auth";
 import { getUserRepos } from "@/app/dashboard/[slug]/util";
+import { AddRepoForm } from "@/components/AddRepository";
 import { PaginationIndicator } from "@/components/PaginationIndicator";
 import { RepoCard } from "@/components/RepoCard";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export async function MainPage({
   return (
     <div
       className={cn({
-        "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3":
+        "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3":
           reposData.length !== 0,
         "flex flex-col items-center": reposData.length === 0,
       })}
@@ -73,14 +74,11 @@ export async function MainPage({
             </EmptyMedia>
             <EmptyTitle>No repository added</EmptyTitle>
             <EmptyDescription>
-              You may go to the settings page to add your repositories so that
-              we can track your code.
+              You may add your repositories so that we can track your code.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button asChild>
-              <Link href={"/dashboard/settings"}>Go to Settings Page</Link>
-            </Button>
+            <AddRepoForm />
           </EmptyContent>
         </Empty>
       )}
@@ -90,13 +88,18 @@ export async function MainPage({
           repo={r.name}
           username={r.ownerLogin}
           lorc={r.lorc}
-          lastUpdated={"idk"}
+          status={r.status}
+          lastUpdated={
+            r.analyzedAt
+              ? new Date(r.analyzedAt * 1000).toLocaleDateString()
+              : "never"
+          }
         />
       ))}
       {reposData.length !== 0 && (
         <div
           className={
-            "col-span-1 md:col-span-2 xl:col-span-3 flex justify-center mt-3 mb-6"
+            "col-span-1 sm:col-span-2 xl:col-span-3 flex justify-center mt-3 mb-6"
           }
         >
           <PaginationIndicator
