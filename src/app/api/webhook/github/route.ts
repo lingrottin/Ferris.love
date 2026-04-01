@@ -14,7 +14,6 @@ async function getInstallationId(owner: string): Promise<number> {
   return resp.data.id;
 }
 
-
 export async function POST(request: Request) {
   const { env } = await getCloudflareContext({ async: true });
   const rawBody = await request.text();
@@ -64,7 +63,11 @@ export async function POST(request: Request) {
   }
 
   const signatureHeader = request.headers.get("X-Hub-Signature-256") || "";
-  const valid = await verifyHmacSha256(repo.webhookSecret, rawBody, signatureHeader);
+  const valid = await verifyHmacSha256(
+    repo.webhookSecret,
+    rawBody,
+    signatureHeader,
+  );
   if (!valid) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
@@ -123,19 +126,22 @@ export async function POST(request: Request) {
   // Call Matthew API
   const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
   try {
-    const matthewResponse = await fetch(`${env.MATTHEW_URL}/api/count`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
-        "Content-Type": "application/json",
+    const matthewResponse = await env.MATTHEW_VPC.fetch(
+      `${env.MATTHEW_URL}/api/count`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user: owner,
+          repo: repoName,
+          callback: callbackUrl,
+          ...(installationToken && { token: installationToken }),
+        }),
       },
-      body: JSON.stringify({
-        user: owner,
-        repo: repoName,
-        callback: callbackUrl,
-        ...(installationToken && { token: installationToken }),
-      }),
-    });
+    );
     if (!matthewResponse.ok) {
       console.error(
         "Matthew API returned error:",

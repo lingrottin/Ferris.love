@@ -57,65 +57,47 @@ function preloadImage(src: string) {
   img.src = src;
 }
 
-function pickFromPool(
-  pool: BadgeChoice[],
-  excludeVariant?: string,
-): BadgeChoice {
-  const candidates = excludeVariant
-    ? pool.filter((item) => item.variant !== excludeVariant)
-    : pool;
-  const list = candidates.length > 0 ? candidates : pool;
-  return list[Math.floor(Math.random() * list.length)];
+function buildChoicePool(size: number): BadgeChoice[] {
+  const pool: BadgeChoice[] = [];
+  let excludeVariant: string | undefined;
+
+  while (pool.length < size) {
+    const existingRepos = new Set(pool.map((choice) => choice.repo));
+    const choice = pickRandomChoice(VARIANTS, excludeVariant, existingRepos);
+    pool.push(choice);
+    excludeVariant = choice.variant;
+  }
+
+  return pool;
+}
+
+function preloadChoices(choices: BadgeChoice[]) {
+  for (const choice of choices) {
+    preloadImage(choice.src);
+  }
 }
 
 export function BadgeExamples() {
   const [current, setCurrent] = useState<BadgeChoice | null>(null);
   const [animationKey, setAnimationKey] = useState(0);
-  const nextRef = useRef<BadgeChoice | null>(null);
   const poolRef = useRef<BadgeChoice[]>([]);
-  const currentVariantRef = useRef<string | null>(null);
-  const variants = useRef<("horizontal" | "card" | "mini")[]>(VARIANTS);
+  const indexRef = useRef(0);
 
   useEffect(() => {
-    const buildNextChoice = (excludeVariant?: string) => {
-      if (poolRef.current.length < 5) {
-        const existingRepos = new Set(
-          poolRef.current.map((choice) => choice.repo),
-        );
-        const created = pickRandomChoice(
-          variants.current,
-          excludeVariant,
-          existingRepos,
-        );
-        poolRef.current = [...poolRef.current, created];
-        if (created.variant === "mini") {
-          variants.current.splice(variants.current.indexOf("mini"));
-        }
-        return created;
-      }
+    const pool = buildChoicePool(5);
+    poolRef.current = pool;
+    preloadChoices(pool);
 
-      return pickFromPool(poolRef.current, excludeVariant);
-    };
-
-    const initial = buildNextChoice();
-    setCurrent(initial);
-    currentVariantRef.current = initial.variant;
-
-    const next = buildNextChoice(initial.variant);
-    nextRef.current = next;
-    preloadImage(next.src);
+    setCurrent(pool[0] ?? null);
+    indexRef.current = 0;
 
     const intervalId = setInterval(() => {
-      const nextChoice =
-        nextRef.current ??
-        buildNextChoice(currentVariantRef.current ?? undefined);
-      setCurrent(nextChoice);
-      currentVariantRef.current = nextChoice.variant;
+      if (poolRef.current.length === 0) {
+        return;
+      }
+      indexRef.current = (indexRef.current + 1) % poolRef.current.length;
+      setCurrent(poolRef.current[indexRef.current]);
       setAnimationKey((key) => key + 1);
-
-      const upcoming = buildNextChoice(nextChoice.variant);
-      nextRef.current = upcoming;
-      preloadImage(upcoming.src);
     }, 5000);
 
     return () => clearInterval(intervalId);

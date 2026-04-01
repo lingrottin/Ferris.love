@@ -19,8 +19,10 @@ type AddRepositoryResult =
       error: string;
     };
 
-async function getInstallationId(owner: string): Promise<number> {
-  const app = await agh();
+async function getInstallationId(
+  app: Awaited<ReturnType<typeof agh>>,
+  owner: string,
+): Promise<number> {
   const resp = await app.octokit.request("GET /users/{username}/installation", {
     username: owner,
   });
@@ -59,17 +61,41 @@ export async function addRepository(
   }
   const db = await makeDb();
 
-  let hasInstallation = true;
-  let installationId: number | null = null;
+  let hasOwnerInstallation = true;
+  let ownerInstallationId: number | null = null;
+  let userInstallationId: number | null = null;
   // biome-ignore lint/suspicious/noExplicitAny: octokit types are complex
-  let octokit: any = null;
+  let ownerOctokit: any = null;
+  // biome-ignore lint/suspicious/noExplicitAny: octokit types are complex
+  let userOctokit: any = null;
+  // biome-ignore lint/suspicious/noExplicitAny: octokit types are complex
+  let authOctokit: any = null;
+  const app = await agh();
 
   try {
-    installationId = await getInstallationId(owner);
-    const app = await agh();
-    octokit = await app.getInstallationOctokit(installationId);
+    ownerInstallationId = await getInstallationId(app, owner);
+    ownerOctokit = await app.getInstallationOctokit(ownerInstallationId);
   } catch {
-    hasInstallation = false;
+    hasOwnerInstallation = false;
+  }
+
+  const currentLogin = session?.user?.login;
+  if (currentLogin) {
+    try {
+      userInstallationId = await getInstallationId(app, currentLogin);
+      userOctokit = await app.getInstallationOctokit(userInstallationId);
+    } catch {
+      userInstallationId = null;
+      userOctokit = null;
+    }
+  }
+
+  authOctokit = ownerOctokit ?? userOctokit;
+  if (!authOctokit) {
+    return {
+      ok: false,
+      error: "GitHub App is not installed for this owner or the current user",
+    };
   }
 
   // Get repo info
@@ -79,46 +105,23 @@ export async function addRepository(
     full_name: string;
     private: boolean;
   };
-  if (hasInstallation && octokit) {
-    try {
-      const resp = await octokit.request("GET /repos/{owner}/{repo}", {
-        owner,
-        repo: repoName,
-      });
-      repoData = {
-        id: resp.data.id,
-        language: resp.data.language,
-        full_name: resp.data.full_name,
-        private: resp.data.private,
-      };
-    } catch {
-      return { ok: false, error: "Repository not found" };
-    }
-  } else {
-    const resp = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}`,
-      {
-        headers: {
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": "ferris.love",
-        },
-      },
-    );
-    if (!resp.ok) {
-      return { ok: false, error: "Repository not found" };
-    }
-    // biome-ignore lint/suspicious/noExplicitAny: GitHub API response
-    const data = (await resp.json()) as any;
+  try {
+    const resp = await authOctokit.request("GET /repos/{owner}/{repo}", {
+      owner,
+      repo: repoName,
+    });
     repoData = {
-      id: data.id,
-      language: data.language,
-      full_name: data.full_name,
-      private: data.private,
+      id: resp.data.id,
+      language: resp.data.language,
+      full_name: resp.data.full_name,
+      private: resp.data.private,
     };
+  } catch {
+    return { ok: false, error: "Repository not found" };
   }
 
   // Block private repos without installation
-  if (repoData.private && !hasInstallation) {
+  if (repoData.private && !hasOwnerInstallation) {
     return {
       ok: false,
       error:
@@ -128,39 +131,18 @@ export async function addRepository(
 
   // Get latest commit SHA
   let commitSha: string;
-  if (hasInstallation && octokit) {
-    try {
-      const commits = await octokit.request(
-        "GET /repos/{owner}/{repo}/commits",
-        {
-          owner,
-          repo: repoName,
-          per_page: 1,
-        },
-      );
-      commitSha = commits.data[0].sha;
-    } catch {
-      return { ok: false, error: "Could not fetch commits" };
-    }
-  } else {
-    const resp = await fetch(
-      `https://api.github.com/repos/${owner}/${repoName}/commits?per_page=1`,
+  try {
+    const commits = await authOctokit.request(
+      "GET /repos/{owner}/{repo}/commits",
       {
-        headers: {
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": "ferris.love",
-        },
+        owner,
+        repo: repoName,
+        per_page: 1,
       },
     );
-    if (!resp.ok) {
-      return { ok: false, error: "Could not fetch commits" };
-    }
-    // biome-ignore lint/suspicious/noExplicitAny: GitHub API response
-    const data = (await resp.json()) as any[];
-    commitSha = data[0]?.sha;
-    if (!commitSha) {
-      return { ok: false, error: "Repository has no commits" };
-    }
+    commitSha = commits.data[0].sha;
+  } catch {
+    return { ok: false, error: "Could not fetch commits" };
   }
 
   const githubRepoId = repoData.id.toString();
@@ -220,10 +202,10 @@ export async function addRepository(
     let webhookInstalled = false;
     let webhookSecret: string | null = null;
 
-    if (hasInstallation && octokit) {
+    if (hasOwnerInstallation && ownerOctokit) {
       const generatedSecret = crypto.randomUUID();
       try {
-        await octokit.request("POST /repos/{owner}/{repo}/hooks", {
+        await ownerOctokit.request("POST /repos/{owner}/{repo}/hooks", {
           owner,
           repo: repoName,
           config: {
@@ -267,11 +249,11 @@ export async function addRepository(
       callback: callbackUrl,
     };
 
-    if (hasInstallation && octokit && installationId) {
+    if (hasOwnerInstallation && ownerOctokit && ownerInstallationId) {
       try {
-        const authResult = (await octokit.auth({
+        const authResult = (await ownerOctokit.auth({
           type: "installation",
-          installationId,
+          installationId: ownerInstallationId,
         })) as { token: string };
         matthewBody.token = authResult.token;
       } catch (e) {
@@ -279,15 +261,30 @@ export async function addRepository(
       }
     }
 
+    if (userInstallationId) {
+      try {
+        const authResult = (await app.octokit.auth({
+          type: "installation",
+          installationId: userInstallationId,
+        })) as { token: string };
+        matthewBody.userInstallationToken = authResult.token;
+      } catch (e) {
+        console.warn("Failed to get current user installation token:", e);
+      }
+    }
+
     try {
-      const matthewResponse = await fetch(`${env.MATTHEW_URL}/api/count`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
-          "Content-Type": "application/json",
+      const matthewResponse = await env.MATTHEW_VPC.fetch(
+        `${env.MATTHEW_URL}/api/count`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(matthewBody),
         },
-        body: JSON.stringify(matthewBody),
-      });
+      );
       if (!matthewResponse.ok) {
         console.error(
           "Matthew API returned error:",

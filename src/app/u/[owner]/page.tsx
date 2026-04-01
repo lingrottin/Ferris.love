@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/empty";
 import { users } from "@/db/schema";
 import { makeDb } from "@/db/util";
+import { agh } from "@/octokit";
 
 type GithubProfile = {
   login: string;
@@ -280,10 +281,21 @@ export default async function PublicUserPage({
 }
 
 async function getGithubProfile(login: string, githubId: string) {
-  // Using unauthenticated Octokit: agh() requires a GitHub App installation
-  // which may not exist for the viewed user. Unauthenticated rate limit is
-  // 60 req/hr — acceptable for public pages with cache headers.
-  const octokit = new Octokit();
+  let octokit = new Octokit();
+  try {
+    const app = await agh();
+    const installation = await app.octokit.request(
+      "GET /users/{username}/installation",
+      {
+        username: login,
+      },
+    );
+    octokit = await app.getInstallationOctokit(installation.data.id);
+  } catch {
+    console.warn(
+      "No installation for requested user; falling back to unauthenticated GitHub requests.",
+    );
+  }
 
   try {
     const byLogin = await octokit.request("GET /users/{username}", {

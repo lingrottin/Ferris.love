@@ -13,7 +13,8 @@
       "!node_modules",
       "!dist",
       "!wrangler.json",
-      "!cloudflare-env.d.ts"
+      "!cloudflare-env.d.ts",
+      "!scripts/**/*"
     ]
   },
   "formatter": {

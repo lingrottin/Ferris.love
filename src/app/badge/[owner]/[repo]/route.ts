@@ -1,3 +1,4 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { and, desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { repoStats, repos } from "@/db/schema";
@@ -7,6 +8,13 @@ import {
   generateBadge,
   generatePlaceholderBadge,
 } from "@/lib/badges";
+import {
+  getCachedSvg,
+  getRepoBadgeKey,
+  getRepoLatestAnalyzedAt,
+  setRepoLatestAnalyzedAt,
+  putCachedSvg,
+} from "@/lib/badge-cache";
 import { COUNTS_LABELS_SHORT as COUNTS_LABELS } from "@/lib/utils";
 
 export async function GET(
@@ -14,6 +22,42 @@ export async function GET(
   { params }: { params: Promise<{ owner: string; repo: string }> },
 ) {
   const { owner, repo: repoName } = await params;
+  const { env } = await getCloudflareContext({ async: true });
+  const url = new URL(request.url);
+
+  // Parse show param
+  const showParam = url.searchParams.get("show");
+  const showKeys = showParam ? showParam.split(",").slice(0, 5) : DEFAULT_SHOW;
+  const showKeyString = showKeys.join(",");
+  const variantParam = url.searchParams.get("variant");
+  let variant = "horizontal";
+  if (["card", "mini", "horizontal"].includes(variantParam ?? "")) {
+    variant = variantParam ?? "horizontal";
+  }
+
+  const latestAnalyzedAt = await getRepoLatestAnalyzedAt(
+    env,
+    owner,
+    repoName,
+  ).catch(() => null);
+  if (latestAnalyzedAt) {
+    const cachedKey = getRepoBadgeKey({
+      owner,
+      repo: repoName,
+      variant,
+      show: showKeyString,
+      analyzedAt: latestAnalyzedAt,
+    });
+    const cachedSvg = await getCachedSvg(env, cachedKey).catch(() => null);
+    if (cachedSvg) {
+      return new NextResponse(cachedSvg, {
+        headers: {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": "s-maxage=3600, stale-while-revalidate=86400",
+        },
+      });
+    }
+  }
   const db = await makeDb();
 
   // Look up repo
@@ -58,13 +102,6 @@ export async function GET(
   }
 
   const stat = stats[0];
-  const url = new URL(request.url);
-
-  // Parse show param
-  const showParam = url.searchParams.get("show");
-  const showKeys = showParam ? showParam.split(",").slice(0, 5) : DEFAULT_SHOW;
-  const variantParam = url.searchParams.get("variant");
-
   // Parse counts
   let counts: Record<string, number> = {};
   try {
@@ -80,16 +117,24 @@ export async function GET(
       label: COUNTS_LABELS[key],
       value: counts[key] ?? 0,
     }));
-  let variant = "horizontal";
-  if (["card", "mini", "horizontal"].includes(variantParam ?? "")) {
-    variant = variantParam ?? "horizontal";
-  }
   const svg = await generateBadge({
     lorc: stat.lorc,
     metrics,
     name: `${owner}/${repoName}`,
     variant,
   });
+
+  await setRepoLatestAnalyzedAt(env, owner, repoName, stat.analyzedAt).catch(
+    () => null,
+  );
+  const cacheKey = getRepoBadgeKey({
+    owner,
+    repo: repoName,
+    variant,
+    show: showKeyString,
+    analyzedAt: stat.analyzedAt,
+  });
+  await putCachedSvg(env, cacheKey, svg).catch(() => null);
 
   return new NextResponse(svg, {
     headers: {

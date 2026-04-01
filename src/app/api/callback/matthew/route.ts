@@ -3,6 +3,10 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { repoStats, repos } from "@/db/schema";
 import { makeDb } from "@/db/util";
+import {
+  setRepoLatestAnalyzedAt,
+  setUserLatestAnalyzedAt,
+} from "@/lib/badge-cache";
 import { verifyHmacSha256, type Counts } from "@/lib/utils";
 
 interface MatthewCallback {
@@ -125,6 +129,11 @@ export async function POST(request: Request) {
         lastScanAt: nowSeconds,
       })
       .where(eq(repos.githubRepoId, repo.githubRepoId));
+
+    await setRepoLatestAnalyzedAt(env, owner, repoName, nowSeconds).catch(
+      () => null,
+    );
+    await setUserLatestAnalyzedAt(env, owner, nowSeconds).catch(() => null);
 
     console.info("[matthew-callback] done status updates completed", {
       owner,

@@ -6,8 +6,11 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ferris-love",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2025-03-01",
-  "compatibility_flags": ["nodejs_compat_v2", "global_fetch_strictly_public"],
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": [
+    "nodejs_compat_v2",
+    "global_fetch_strictly_public"
+  ],
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"
@@ -49,6 +52,13 @@
     {
       "binding": "R2",
       "bucket_name": "ferris-love"
+    }
+  ],
+  "vpc_services": [
+    {
+      "binding": "MATTHEW_VPC",
+      "service_id": "{{MATTHEW_VPC_ID}}",
+      "remote": true
     }
   ]
   /**

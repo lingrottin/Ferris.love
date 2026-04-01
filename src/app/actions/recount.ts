@@ -38,12 +38,28 @@ async function getInstallationId(owner: string): Promise<number> {
   return resp.data.id;
 }
 
+async function getCurrentUserInstallationToken(login: string): Promise<string> {
+  const app = await agh();
+  const installation = await app.octokit.request(
+    "GET /users/{username}/installation",
+    {
+      username: login,
+    },
+  );
+  const authResult = (await app.octokit.auth({
+    type: "installation",
+    installationId: installation.data.id,
+  })) as { token: string };
+  return authResult.token;
+}
+
 async function queueRecountForRepo({
   repoId,
   owner,
   name,
   env,
   db,
+  userInstallationToken,
   installationCache,
   installationOctokitCache,
 }: {
@@ -52,6 +68,7 @@ async function queueRecountForRepo({
   name: string;
   env: CloudflareEnv;
   db: Awaited<ReturnType<typeof makeDb>>;
+  userInstallationToken: string;
   installationCache: Map<string, number | null>;
   installationOctokitCache: Map<
     number,
@@ -165,21 +182,26 @@ async function queueRecountForRepo({
   }
 
   const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${name}`)}`;
-  const matthewResp = await fetch(`${env.MATTHEW_URL}/api/count`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
-      "Content-Type": "application/json",
+  const matthewResp = await env.MATTHEW_VPC.fetch(
+    `${env.MATTHEW_URL}/api/count`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user: owner,
+        repo: name,
+        callback: callbackUrl,
+        token: installationToken === "" ? undefined : installationToken,
+        userInstallationToken,
+      }),
     },
-    body: JSON.stringify({
-      user: owner,
-      repo: name,
-      callback: callbackUrl,
-      token: installationToken === "" ? undefined : installationToken,
-    }),
-  });
+  );
 
   if (!matthewResp.ok) {
+    console.log(matthewResp);
     throw new Error(`Matthew API returned ${matthewResp.status}`);
   }
 }
@@ -188,6 +210,9 @@ export async function recount(): Promise<RecountResult> {
   const session = await auth();
   if (!session?.user?.db?.githubId) {
     return { ok: false, error: "Unauthorized" };
+  }
+  if (!session.user.login) {
+    return { ok: false, error: "Missing user login" };
   }
 
   const { env } = await getCloudflareContext({ async: true });
@@ -204,6 +229,19 @@ export async function recount(): Promise<RecountResult> {
     };
   }
   const db = await makeDb();
+
+  let userInstallationToken: string;
+  try {
+    userInstallationToken = await getCurrentUserInstallationToken(
+      session.user.login,
+    );
+  } catch (e) {
+    console.error("Failed to get current user installation token", e);
+    return {
+      ok: false,
+      error: "GitHub App is not installed for the current user",
+    };
+  }
 
   const userRepoRows = await db
     .select({
@@ -237,12 +275,14 @@ export async function recount(): Promise<RecountResult> {
         name: repo.name,
         env,
         db,
+        userInstallationToken,
         installationCache,
         installationOctokitCache,
       });
 
       queued += 1;
     } catch (e) {
+      console.log(e);
       console.error(
         "Failed to queue recount for repo",
         repo.owner,
@@ -268,6 +308,9 @@ export async function recountSingle(
   if (!session?.user?.db?.githubId) {
     return { ok: false, error: "Unauthorized" };
   }
+  if (!session.user.login) {
+    return { ok: false, error: "Missing user login" };
+  }
 
   const parts = repo?.split("/");
   if (!parts || parts.length !== 2 || !parts[0] || !parts[1]) {
@@ -292,6 +335,19 @@ export async function recountSingle(
     };
   }
   const db = await makeDb();
+
+  let userInstallationToken: string;
+  try {
+    userInstallationToken = await getCurrentUserInstallationToken(
+      session.user.login,
+    );
+  } catch (e) {
+    console.error("Failed to get current user installation token", e);
+    return {
+      ok: false,
+      error: "GitHub App is not installed for the current user",
+    };
+  }
 
   const targetRepo = await db
     .select({
@@ -332,6 +388,7 @@ export async function recountSingle(
       name: targetRepo.name,
       env,
       db,
+      userInstallationToken,
       installationCache,
       installationOctokitCache,
     });

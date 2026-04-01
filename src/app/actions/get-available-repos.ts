@@ -8,7 +8,7 @@ export async function getAvailableRepos(
   login: string | null | undefined,
   page = 1,
 ) {
-  "use cache";
+  //"use cache";
 
   if (!login) {
     return {
@@ -43,7 +43,8 @@ export async function getAvailableRepos(
       per_page: PER_PAGE,
       has_more: page * PER_PAGE < data.total_count,
     };
-  } catch {
+  } catch (e) {
+    console.log(e);
     return {
       total_count: 0,
       repositories: [],

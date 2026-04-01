@@ -90,3 +90,4 @@ fabric.properties
 .idea/httpRequests
 http-client.private.env.json
 
+wrangler.jsonc
