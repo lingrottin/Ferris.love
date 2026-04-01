@@ -3,6 +3,7 @@ import { and, eq, ne } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { repoStats, repos } from "@/db/schema";
 import { makeDb } from "@/db/util";
+import { verifyHmacSha256 } from "@/lib/utils";
 import { agh } from "@/octokit";
 
 async function getInstallationId(owner: string): Promise<number> {
@@ -13,27 +14,6 @@ async function getInstallationId(owner: string): Promise<number> {
   return resp.data.id;
 }
 
-async function verifyHmac(
-  secret: string,
-  body: string,
-  signature: string,
-): Promise<boolean> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-  const expected =
-    "sha256=" +
-    Array.from(new Uint8Array(sig))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  return expected === signature;
-}
 
 export async function POST(request: Request) {
   const { env } = await getCloudflareContext({ async: true });
@@ -84,7 +64,7 @@ export async function POST(request: Request) {
   }
 
   const signatureHeader = request.headers.get("X-Hub-Signature-256") || "";
-  const valid = await verifyHmac(repo.webhookSecret, rawBody, signatureHeader);
+  const valid = await verifyHmacSha256(repo.webhookSecret, rawBody, signatureHeader);
   if (!valid) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
@@ -143,7 +123,7 @@ export async function POST(request: Request) {
   // Call Matthew API
   const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
   try {
-    await fetch(`${env.MATTHEW_URL}/api/count`, {
+    const matthewResponse = await fetch(`${env.MATTHEW_URL}/api/count`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
@@ -156,6 +136,26 @@ export async function POST(request: Request) {
         ...(installationToken && { token: installationToken }),
       }),
     });
+    if (!matthewResponse.ok) {
+      console.error(
+        "Matthew API returned error:",
+        matthewResponse.status,
+        matthewResponse.statusText,
+      );
+      await db
+        .update(repoStats)
+        .set({ status: "error" })
+        .where(
+          and(
+            eq(repoStats.repoId, repo.githubRepoId),
+            eq(repoStats.commitSha, commitSha),
+          ),
+        );
+      await db
+        .update(repos)
+        .set({ status: "failed" })
+        .where(eq(repos.githubRepoId, repo.githubRepoId));
+    }
   } catch (e) {
     console.error("Matthew API call failed:", e);
   }

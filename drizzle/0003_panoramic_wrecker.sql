@@ -10,7 +10,7 @@ CREATE TABLE `__new_repo_stats` (
 	FOREIGN KEY (`repo_id`) REFERENCES `repos`(`github_repo_id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-INSERT INTO `__new_repo_stats`("id", "repo_id", "status", "lorc", "commit_sha", "counts", "analyzed_at") SELECT "id", "repo_id", "status", "lorc", "commit_sha", "counts", "analyzed_at" FROM `repo_stats`;--> statement-breakpoint
+INSERT INTO `__new_repo_stats`("id", "repo_id", "status", "lorc", "commit_sha", "counts", "analyzed_at") SELECT "id", "repo_id", 'done', "lorc", "commit_sha", "counts", "analyzed_at" FROM `repo_stats`;--> statement-breakpoint
 DROP TABLE `repo_stats`;--> statement-breakpoint
 ALTER TABLE `__new_repo_stats` RENAME TO `repo_stats`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint

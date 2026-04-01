@@ -3,29 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { repoStats, repos } from "@/db/schema";
 import { makeDb } from "@/db/util";
-import type { Counts } from "@/lib/utils";
-
-async function verifyHmac(
-  secret: string,
-  body: string,
-  signature: string,
-): Promise<boolean> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-  const expected =
-    "sha256=" +
-    Array.from(new Uint8Array(sig))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  return expected === signature;
-}
+import { verifyHmacSha256, type Counts } from "@/lib/utils";
 
 interface MatthewCallback {
   repo: string;
@@ -57,7 +35,7 @@ export async function POST(request: Request) {
 
   // Verify HMAC signature
   const signatureHeader = request.headers.get("X-Signature-256") || "";
-  const valid = await verifyHmac(
+  const valid = await verifyHmacSha256(
     env.MATTHEW_CALLBACK_SECRET,
     rawBody,
     signatureHeader,
@@ -68,7 +46,13 @@ export async function POST(request: Request) {
   }
   console.info("[matthew-callback] signature verified", { repoParam });
 
-  const callback: MatthewCallback = JSON.parse(rawBody);
+  let callback: MatthewCallback;
+  try {
+    callback = JSON.parse(rawBody) as MatthewCallback;
+  } catch {
+    console.warn("[matthew-callback] invalid JSON body", { repoParam });
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
   console.info("[matthew-callback] callback parsed", {
     repoParam,
     status: callback.status,

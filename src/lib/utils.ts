@@ -196,3 +196,45 @@ export const COUNTS_LABELS_SHORT: Record<string, string> = {
   def_impl_members: "Impl Members",
   def_test_fn: "Test Fns",
 };
+
+/** Converts a hexadecimal string to a byte array. Returns null for invalid input. */
+function hexToBytes(hex: string): Uint8Array | null {
+  if (hex.length % 2 !== 0) return null;
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+    if (Number.isNaN(byte)) return null;
+    bytes[i] = byte;
+  }
+  return bytes;
+}
+
+/**
+ * Verifies an HMAC-SHA256 signature in "sha256=<hex>" format using a
+ * constant-time comparison via `crypto.subtle.verify`.
+ */
+export async function verifyHmacSha256(
+  secret: string,
+  body: string,
+  signature: string,
+): Promise<boolean> {
+  const prefix = "sha256=";
+  if (!signature.startsWith(prefix)) return false;
+  const signatureBytes = hexToBytes(signature.slice(prefix.length));
+  if (!signatureBytes) return false;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
+  return crypto.subtle.verify(
+    "HMAC",
+    key,
+    signatureBytes,
+    encoder.encode(body),
+  );
+}

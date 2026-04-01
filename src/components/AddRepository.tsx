@@ -181,6 +181,7 @@ export function AddRepoForm({
             </DialogDescription>
           </DialogHeader>
           <Input
+            aria-label="Repository (Owner/Repository format)"
             placeholder="Owner/Repository"
             value={repoInput}
             onChange={(e) => {

@@ -194,7 +194,7 @@ export async function addRepository(
   } else if (needsAnalysis) {
     await db
       .update(repos)
-      .set({ status: "analyzing" })
+      .set({ status: "analyzing", isPrivate: !!repoData.private })
       .where(eq(repos.githubRepoId, githubRepoId));
   }
 
@@ -218,9 +218,10 @@ export async function addRepository(
 
   if (needsAnalysis) {
     let webhookInstalled = false;
-    const webhookSecret = crypto.randomUUID();
+    let webhookSecret: string | null = null;
 
     if (hasInstallation && octokit) {
+      const generatedSecret = crypto.randomUUID();
       try {
         await octokit.request("POST /repos/{owner}/{repo}/hooks", {
           owner,
@@ -228,11 +229,12 @@ export async function addRepository(
           config: {
             url: `${env.BASE_URL}/api/webhook/github`,
             content_type: "json",
-            secret: webhookSecret,
+            secret: generatedSecret,
           },
           events: ["push"],
         });
         webhookInstalled = true;
+        webhookSecret = generatedSecret;
       } catch (e) {
         console.warn(
           "Webhook registration failed (may already exist or no permission):",
@@ -244,7 +246,7 @@ export async function addRepository(
     await db
       .update(repos)
       .set({
-        webhookSecret: hasInstallation ? webhookSecret : null,
+        webhookSecret,
         webhookInstalled,
       })
       .where(eq(repos.githubRepoId, githubRepoId));
@@ -278,7 +280,7 @@ export async function addRepository(
     }
 
     try {
-      await fetch(`${env.MATTHEW_URL}/api/count`, {
+      const matthewResponse = await fetch(`${env.MATTHEW_URL}/api/count`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
@@ -286,6 +288,26 @@ export async function addRepository(
         },
         body: JSON.stringify(matthewBody),
       });
+      if (!matthewResponse.ok) {
+        console.error(
+          "Matthew API returned error:",
+          matthewResponse.status,
+          matthewResponse.statusText,
+        );
+        await db
+          .update(repoStats)
+          .set({ status: "error" })
+          .where(
+            and(
+              eq(repoStats.repoId, githubRepoId),
+              eq(repoStats.commitSha, commitSha),
+            ),
+          );
+        await db
+          .update(repos)
+          .set({ status: "failed" })
+          .where(eq(repos.githubRepoId, githubRepoId));
+      }
     } catch (e) {
       console.error("Matthew API call failed:", e);
     }
