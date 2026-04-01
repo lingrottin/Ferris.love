@@ -198,9 +198,9 @@ export const COUNTS_LABELS_SHORT: Record<string, string> = {
 };
 
 /** Converts a hexadecimal string to a byte array. Returns null for invalid input. */
-function hexToBytes(hex: string): Uint8Array | null {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> | null {
   if (hex.length % 2 !== 0) return null;
-  const bytes = new Uint8Array(hex.length / 2);
+  const bytes = new Uint8Array(hex.length / 2) as Uint8Array<ArrayBuffer>;
   for (let i = 0; i < bytes.length; i++) {
     const byte = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
     if (Number.isNaN(byte)) return null;
