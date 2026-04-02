@@ -124,15 +124,18 @@ export async function GET(
     variant,
   });
 
-  await setRepoLatestAnalyzedAt(env, owner, repoName, stat.analyzedAt).catch(
-    () => null,
-  );
+  await setRepoLatestAnalyzedAt(
+    env,
+    owner,
+    repoName,
+    stat.analyzedAt ?? 0,
+  ).catch(() => null);
   const cacheKey = getRepoBadgeKey({
     owner,
     repo: repoName,
     variant,
     show: showKeyString,
-    analyzedAt: stat.analyzedAt,
+    analyzedAt: stat.analyzedAt ?? 0,
   });
   await putCachedSvg(env, cacheKey, svg).catch(() => null);
 

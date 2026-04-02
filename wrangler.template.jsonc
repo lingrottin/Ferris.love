@@ -8,8 +8,9 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-04-01",
   "compatibility_flags": [
-    "nodejs_compat_v2",
-    "global_fetch_strictly_public"
+    "nodejs_compat",
+    "global_fetch_strictly_public",
+    "enable_nodejs_fs_module"
   ],
   "assets": {
     "binding": "ASSETS",
@@ -17,6 +18,15 @@
   },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "GITHUB_APP_NAME": "{{GITHUB_APP_NAME}}",
+    "GITHUB_APP_ID": "{{GITHUB_APP_ID}}",
+    "MATTHEW_URL": "{{MATTHEW_URL}}",
+    "AUTH_URL": "{{AUTH_URL}}",
+    "AUTH_TRUST_HOST": "true",
+    "BASE_URL": "{{BASE_URL}}",
+    "AUTH_GITHUB_ID": "{{AUTH_GITHUB_ID}}"
   },
   /**
    * Smart Placement
@@ -33,19 +43,19 @@
     {
       "binding": "DB_AUTH",
       "database_name": "db",
-      "database_id": "db"
+      "database_id": "{{AUTH_DB_ID}}"
     },
     {
       "binding": "DB",
       "database_name": "db_drizzle",
-      "database_id": "db_drizzle",
+      "database_id": "{{DRIZZLE_DB_ID}}",
       "migrations_dir": "drizzle"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "KV",
-      "id": "kvRoot"
+      "id": "{{KV_ID}}"
     }
   ],
   "r2_buckets": [
