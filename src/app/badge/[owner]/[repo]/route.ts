@@ -4,17 +4,17 @@ import { type NextRequest, NextResponse } from "next/server";
 import { repoStats, repos } from "@/db/schema";
 import { makeDb } from "@/db/util";
 import {
+  getCachedSvg,
+  getRepoBadgeKey,
+  getRepoLatestAnalyzedAt,
+  putCachedSvg,
+  setRepoLatestAnalyzedAt,
+} from "@/lib/badge-cache";
+import {
   DEFAULT_SHOW,
   generateBadge,
   generatePlaceholderBadge,
 } from "@/lib/badges";
-import {
-  getCachedSvg,
-  getRepoBadgeKey,
-  getRepoLatestAnalyzedAt,
-  setRepoLatestAnalyzedAt,
-  putCachedSvg,
-} from "@/lib/badge-cache";
 import { COUNTS_LABELS_SHORT as COUNTS_LABELS } from "@/lib/utils";
 
 export async function GET(

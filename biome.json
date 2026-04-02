@@ -10,6 +10,8 @@
     "includes": [
       "**",
       "!.next",
+      "!.open-next",
+      "!.wrangler",
       "!node_modules",
       "!dist",
       "!wrangler.json",

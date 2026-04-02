@@ -7,7 +7,7 @@ import {
   setRepoLatestAnalyzedAt,
   setUserLatestAnalyzedAt,
 } from "@/lib/badge-cache";
-import { verifyHmacSha256, type Counts } from "@/lib/utils";
+import { type Counts, verifyHmacSha256 } from "@/lib/utils";
 
 interface MatthewCallback {
   repo: string;

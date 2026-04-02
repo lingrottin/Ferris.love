@@ -1,7 +1,7 @@
 import { TopBar } from "@/components/TopBar";
 import "../articles.css";
-import Script from "next/script";
 import Link from "next/link";
+import Script from "next/script";
 export default async function Privacy() {
   return (
     <>

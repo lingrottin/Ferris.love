@@ -4,13 +4,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getStatsWithoutRepo } from "@/app/actions/get-stats";
 import { users } from "@/db/schema";
 import { makeDb } from "@/db/util";
-import { type BadgeMetric, generateBadge } from "@/lib/badges";
 import {
   getCachedSvg,
   getUserBadgeKey,
   getUserLatestAnalyzedAt,
   putCachedSvg,
 } from "@/lib/badge-cache";
+import { type BadgeMetric, generateBadge } from "@/lib/badges";
 
 const LABELS = {
   total_fn_calls: "Fn Calls",
