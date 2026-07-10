@@ -135,8 +135,8 @@ export async function POST(request: Request) {
   // Call Matthew API
   const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
   try {
-    const matthewResponse = await env.MATTHEW_VPC.fetch(
-      `${env.MATTHEW_URL}/api/count`,
+    const matthewResponse = await env.MATTHEW.fetch(
+      `http://container/api/count`,
       {
         method: "POST",
         headers: {

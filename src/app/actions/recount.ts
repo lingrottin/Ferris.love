@@ -182,8 +182,8 @@ async function queueRecountForRepo({
   }
 
   const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${name}`)}`;
-  const matthewResp = await env.MATTHEW_VPC.fetch(
-    `${env.MATTHEW_URL}/api/count`,
+  const matthewResp = await env.MATTHEW.fetch(
+    `http://container/api/count`,
     {
       method: "POST",
       headers: {

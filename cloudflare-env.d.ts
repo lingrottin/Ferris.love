@@ -10,7 +10,7 @@ declare namespace Cloudflare {
 		R2: R2Bucket;
 		DB_AUTH: D1Database;
 		DB: D1Database;
-		MATTHEW_VPC: Fetcher;
+		MATTHEW: Fetcher;
 		ASSETS: Fetcher;
 		NEXTJS_ENV: string;
 		AUTH_SECRET: string;
@@ -21,7 +21,6 @@ declare namespace Cloudflare {
 		GITHUB_APP_PRIVATE_KEY: string;
 		GITHUB_APP_NAME: string;
 		GITHUB_APP_ID: string;
-		MATTHEW_URL: string;
 		MATTHEW_TOKEN: string;
 		MATTHEW_CALLBACK_SECRET: string;
 		BASE_URL: string;

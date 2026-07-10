@@ -274,8 +274,8 @@ export async function addRepository(
     }
 
     try {
-      const matthewResponse = await env.MATTHEW_VPC.fetch(
-        `${env.MATTHEW_URL}/api/count`,
+      const matthewResponse = await env.MATTHEW.fetch(
+        `http://container/api/count`,
         {
           method: "POST",
           headers: {

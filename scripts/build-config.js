@@ -20,17 +20,27 @@ function escapeJsonString(value) {
   return JSON.stringify(value).slice(1, -1);
 }
 
+/**
+ * Builds wrangler.jsonc from wrangler.template.jsonc + .env
+ *
+ * Required vars: {{VAR}} — must exist in .env
+ * Optional vars: {{VAR?}} — silently skipped if missing
+ */
 function renderTemplate(template, vars) {
   const missing = new Set();
   const output = template.replace(
-    /{{\s*([A-Za-z0-9_]+)\s*}}/g,
+    /{{\s*([A-Za-z0-9_]+)\??\s*}}/g,
     (match, key) => {
-      if (Object.prototype.hasOwnProperty.call(vars, key)) {
-        return escapeJsonString(vars[key]);
+      const optional = match.includes("?");
+      const cleanKey = key.replace(/\?$/, "");
+      if (Object.prototype.hasOwnProperty.call(vars, cleanKey)) {
+        return escapeJsonString(vars[cleanKey]);
       }
 
-      missing.add(key);
-      return match;
+      if (!optional) {
+        missing.add(cleanKey);
+      }
+      return match; // leave optional missing vars as-is
     },
   );
 
@@ -43,7 +53,7 @@ function renderTemplate(template, vars) {
 }
 
 function main() {
-  const env = readEnv(envPath);
+  const env = { ...process.env, ...readEnv(envPath) };
   const template = fs.readFileSync(templatePath, "utf8");
   const rendered = renderTemplate(template, env);
 

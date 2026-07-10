@@ -22,7 +22,6 @@
   "vars": {
     "GITHUB_APP_NAME": "{{GITHUB_APP_NAME}}",
     "GITHUB_APP_ID": "{{GITHUB_APP_ID}}",
-    "MATTHEW_URL": "{{MATTHEW_URL}}",
     "AUTH_URL": "{{AUTH_URL}}",
     "AUTH_TRUST_HOST": "true",
     "BASE_URL": "{{BASE_URL}}",
@@ -64,11 +63,15 @@
       "bucket_name": "ferris-love"
     }
   ],
-  "vpc_services": [
+  "containers": [
     {
-      "binding": "MATTHEW_VPC",
-      "service_id": "{{MATTHEW_VPC_ID}}",
-      "remote": true
+      "name": "MATTHEW",
+      "class_name": "MatthewContainer",
+      "image": "registry.cloudflare.com/d58ae43a517b0f33bc23b58e5a4287c5/matthew:latest",
+      "instance_type": "basic",
+      "image_vars": {
+        "MATTHEW_MAX_REPO_SIZE_KB": "4194304"
+      }
     }
   ]
   /**
