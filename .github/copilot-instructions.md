@@ -34,7 +34,7 @@ This is a **Next.js 15** app (App Router) deployed to **Cloudflare Workers** via
 | D1 (Drizzle) | `DB` | App tables (users, repos, repo_stats, user_repos) |
 | KV | `KV` | Badge SVG cache, rate limiting, auth migration flag |
 | R2 | `R2` | Font files (Inter, Adwaita Mono) for badge rendering |
-| Container | `MATTHEW` | Analysis via Cloudflare Containers (Rust service) |
+| Workers VPC | `MATTHEW_VPC` | Internal communication with Matthew analysis service |
 
 ### Directory structure
 
