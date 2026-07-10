@@ -43,7 +43,7 @@ You need to follow the following steps to get Ferris.love to work. (On Cloudflar
     ```
 
     - For deploying to Cloudflare: Just put them in `.env`.
-    - For developing locally: You may need to put them both in `.env` and `.dev.vars`. Auth.js somehow looks in the former, but the latter is actually read during the runtime. You can just fill in random values in the `CF RESOURCE IDs` section, **except for `MATTHEW_VPC_ID`**. Workers VPC currently supports remote binding only during local debugging.
+    - For developing locally: You may need to put them both in `.env` and `.dev.vars`. Auth.js somehow looks in the former, but the latter is actually read during the runtime. You can just fill in random values in the `CF RESOURCE IDs` section, **except for `MATTHEW_VPC_ID`**. Workers VPC. even during local debugging, currently supports remote binding only.
    
 1. Run `node scripts/build-config.js`. This creates a `wrangler.jsonc` by filling up placeholders in [`wrangler.template.jsonc`](/wrangler.template.jsonc) with the values in `.env`.
 
