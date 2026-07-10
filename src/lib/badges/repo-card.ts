@@ -1,10 +1,7 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { AdwaitaMonoBold, InterBold, InterRegular } from "./font";
 import {
-  AdwaitaMonoBold,
   type BadgeOptions,
   cssElement,
-  InterBold,
-  InterRegular,
   svgNum,
   withClassName,
   withSvgRoot,
@@ -28,11 +25,10 @@ const css = `
 `;
 
 export async function RepoMixedBadge(options: BadgeOptions) {
-  const env = getCloudflareContext().env;
   const { metrics, lorc, name: repoName } = options;
-  const interRegular = await InterRegular(env);
-  const interBold = await InterBold(env);
-  const adwaitaMono = await AdwaitaMonoBold(env);
+  const interRegular = await InterRegular();
+  const interBold = await InterBold();
+  const adwaitaMono = await AdwaitaMonoBold();
   let svg = cssElement(css);
 
   // --------------- upper block -----------------

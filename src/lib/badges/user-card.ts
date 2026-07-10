@@ -1,11 +1,8 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { InterBlack, InterBold, InterRegular } from "./font";
 import {
   type BadgeOptions,
   cssElement,
   ferris,
-  InterBlack,
-  InterBold,
-  InterRegular,
   withClassName,
   withSvgRoot,
 } from "./index";
@@ -22,11 +19,10 @@ const css = `
 .accent {fill:#F74C00;}
 `;
 export async function UserCard(options: BadgeOptions) {
-  const env = getCloudflareContext().env;
   const { lorc, name } = options;
-  const interRegular = await InterRegular(env);
-  const interBold = await InterBold(env);
-  const interBlack = await InterBlack(env);
+  const interRegular = await InterRegular();
+  const interBold = await InterBold();
+  const interBlack = await InterBlack();
 
   let svg = "";
 

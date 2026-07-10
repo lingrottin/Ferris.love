@@ -1,4 +1,3 @@
-import opentype from "opentype.js";
 // Although this is server-rendered, 'svgo' without '/browser'
 // will try to import 'fs/promises' which Next refuses to resolves
 import { optimize } from "svgo/browser";
@@ -58,51 +57,6 @@ function escapeXml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-let _interRegularCache: ReturnType<typeof opentype.parse> | null = null;
-let _interBoldCache: ReturnType<typeof opentype.parse> | null = null;
-let _interBlackCache: ReturnType<typeof opentype.parse> | null = null;
-let _adwaitaMonoBoldCache: ReturnType<typeof opentype.parse> | null = null;
-
-export async function InterRegular(env: CloudflareEnv) {
-  if (_interRegularCache) return _interRegularCache;
-  const blob = await env.R2?.get("Inter_Regular.ttf").then((e) =>
-    e?.arrayBuffer(),
-  );
-  if (!blob) throw new Error("Inter Regular font not found");
-  _interRegularCache = opentype.parse(blob);
-  return _interRegularCache;
-}
-
-export async function InterBold(env: CloudflareEnv) {
-  if (_interBoldCache) return _interBoldCache;
-  const blob = await env.R2?.get("Inter_Bold.ttf").then((e) =>
-    e?.arrayBuffer(),
-  );
-  if (!blob) throw new Error("Inter Bold font not found");
-  _interBoldCache = opentype.parse(blob);
-  return _interBoldCache;
-}
-
-export async function InterBlack(env: CloudflareEnv) {
-  if (_interBlackCache) return _interBlackCache;
-  const blob = await env.R2?.get("Inter_Black.ttf").then((e) =>
-    e?.arrayBuffer(),
-  );
-  if (!blob) throw new Error("Inter Black font not found");
-  _interBlackCache = opentype.parse(blob);
-  return _interBlackCache;
-}
-
-export async function AdwaitaMonoBold(env: CloudflareEnv) {
-  if (_adwaitaMonoBoldCache) return _adwaitaMonoBoldCache;
-  const blob = await env.R2?.get("AdwaitaMono_Bold.ttf").then((e) =>
-    e?.arrayBuffer(),
-  );
-  if (!blob) throw new Error("Adwaita Mono Bold font not found");
-  _adwaitaMonoBoldCache = opentype.parse(blob);
-  return _adwaitaMonoBoldCache;
 }
 
 export async function generateBadge(options: BadgeOptions): Promise<string> {

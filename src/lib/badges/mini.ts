@@ -1,9 +1,8 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { InterBold } from "./font";
 import {
   type BadgeOptions,
   cssElement,
   ferris,
-  InterBold,
   withClassName,
   withSvgRoot,
 } from "./index";
@@ -22,9 +21,8 @@ const css = `
 `;
 
 export default async function MiniBadge(options: BadgeOptions) {
-  const env = getCloudflareContext().env;
   const { lorc } = options;
-  const font = await InterBold(env);
+  const font = await InterBold();
   let svg = cssElement(css);
 
   svg += `<path d="M0 3C0 1 1 0 3 0H95V20H3C1 20 0 19 0 17V3Z" class="left-bg"/>`;

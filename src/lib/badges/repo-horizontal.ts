@@ -1,11 +1,9 @@
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { InterBold, InterRegular } from "./font";
 import {
   type BadgeOptions,
   cssElement,
   ferris,
   formatNumber,
-  InterBold,
-  InterRegular,
   withClassName,
   withSvgRoot,
 } from "./index";
@@ -26,11 +24,10 @@ const css = `
 `;
 
 export default async function RepoHorizontalBadge(options: BadgeOptions) {
-  const env = getCloudflareContext().env;
   const { metrics, lorc, name: repoName } = options;
 
-  const interRegular = await InterRegular(env);
-  const interBold = await InterBold(env);
+  const interRegular = await InterRegular();
+  const interBold = await InterBold();
 
   let svg = cssElement(css);
 
