@@ -16,7 +16,7 @@ const css = `
   .fg {fill:#FFFFFF;}
 }
 @media (prefers-color-scheme: light) {
-  #bg {fill:#FFFFFF; }
+  #bg {fill:#F6F8FA;}
   .fg {fill:#000000;}
 }
 .accent {fill:#F74C00;}

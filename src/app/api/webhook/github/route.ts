@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
   // Parse body to get repo info
   let payload: {
-    repository: { full_name: string; id: number };
+    repository: { full_name: string; id: number; private: boolean };
     after: string;
   };
   try {
@@ -53,6 +53,15 @@ export async function POST(request: Request) {
   }
 
   const repo = repoRecords[0];
+
+  // Sync is_private if the repo visibility changed on GitHub
+  const currentPrivate = !!payload.repository.private;
+  if (repo.isPrivate !== currentPrivate) {
+    await db
+      .update(repos)
+      .set({ isPrivate: currentPrivate })
+      .where(eq(repos.githubRepoId, repo.githubRepoId));
+  }
 
   // Verify signature using per-repo webhook secret
   if (!repo.webhookSecret) {

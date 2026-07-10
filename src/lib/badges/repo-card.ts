@@ -14,7 +14,7 @@ const css = `
 @media(prefers-color-scheme:light){
 .fg {fill:#000000;}
 .name {fill:#000000;}
-.upper-bg {fill:#FFFFFF;}
+.upper-bg {fill:#F6F8FA;}
 .bottom-bg {fill:#F74C00;}
 }
 @media(prefers-color-scheme:dark){

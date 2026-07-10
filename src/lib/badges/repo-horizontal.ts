@@ -18,7 +18,7 @@ const css = `
 }
 @media (prefers-color-scheme: light) {
   #left-block-bg {fill:#F74C00;}
-  #right-block-bg {fill:#FFFFFF; }
+  #right-block-bg {fill:#F6F8FA;}
   .fg {fill:#000000;}
 }
 .accent {fill:#F74C00;}

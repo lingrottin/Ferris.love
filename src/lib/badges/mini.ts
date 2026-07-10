@@ -10,7 +10,7 @@ import {
 
 const css = `
 @media(prefers-color-scheme:light){
-.left-bg {fill:#FFFFFF;}
+.left-bg {fill:#F6F8FA;}
 .left-fg {fill:#000000;}
 }
 @media(prefers-color-scheme:dark){
