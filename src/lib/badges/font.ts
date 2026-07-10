@@ -72,7 +72,7 @@ function getPath(
     }
     offset += glyph.aw * scale;
   }
-  const svg = parts.join("");
+  const svg = `<g>${parts.join("")}</g>`;
   return {
     toSVG(_dp?: number) {
       return svg;
