@@ -1,10 +1,12 @@
 "use server";
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { and, desc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { Octokit } from "octokit";
 import { auth } from "@/auth";
-import { repoStats, repos, userRepos } from "@/db/schema";
+import { repos, userRepos } from "@/db/schema";
 import { makeDb } from "@/db/util";
+import { enqueueAnalysis } from "@/lib/analysis/jobs";
 import { consumeRateLimit, formatRetryAfter } from "@/lib/rate-limit";
 import { agh } from "@/octokit";
 
@@ -30,180 +32,58 @@ type RecountSingleResult =
       error: string;
     };
 
-async function getInstallationId(owner: string): Promise<number> {
-  const app = await agh();
-  const resp = await app.octokit.request("GET /users/{username}/installation", {
-    username: owner,
-  });
-  return resp.data.id;
-}
-
-async function getCurrentUserInstallationToken(login: string): Promise<string> {
-  const app = await agh();
-  const installation = await app.octokit.request(
-    "GET /users/{username}/installation",
-    {
-      username: login,
-    },
-  );
-  const authResult = (await app.octokit.auth({
-    type: "installation",
-    installationId: installation.data.id,
-  })) as { token: string };
-  return authResult.token;
-}
-
 async function queueRecountForRepo({
   repoId,
   owner,
   name,
   env,
-  db,
-  userInstallationToken,
-  installationCache,
-  installationOctokitCache,
+  fallbackLogin,
 }: {
   repoId: string;
   owner: string;
   name: string;
   env: CloudflareEnv;
-  db: Awaited<ReturnType<typeof makeDb>>;
-  userInstallationToken: string;
-  installationCache: Map<string, number | null>;
-  installationOctokitCache: Map<
-    number,
-    Awaited<
-      ReturnType<Awaited<ReturnType<typeof agh>>["getInstallationOctokit"]>
-    >
-  >;
+  fallbackLogin: string;
 }) {
-  let installationId = installationCache.get(owner);
-  if (installationId === undefined) {
+  const app = await agh();
+  let installationId: number | null = null;
+  try {
+    const installation = await app.octokit.request(
+      "GET /repos/{owner}/{repo}/installation",
+      { owner, repo: name },
+    );
+    installationId = installation.data.id;
+  } catch (error) {
+    if ((error as { status?: number }).status !== 404) throw error;
+    // Public repositories can use the requesting user's installation quota.
     try {
-      installationId = await getInstallationId(owner);
-      installationCache.set(owner, installationId);
-    } catch (e) {
-      // Recount should still be queued for public repositories without installation.
-      console.warn("No installation found, continuing with empty token", {
-        owner,
-        repo: name,
-        error: e,
-      });
-      installationId = null;
-      installationCache.set(owner, null);
-    }
-  }
-
-  let installationOctokit: Awaited<
-    ReturnType<Awaited<ReturnType<typeof agh>>["getInstallationOctokit"]>
-  > | null = null;
-  if (installationId) {
-    installationOctokit = installationOctokitCache.get(installationId) ?? null;
-  }
-  if (installationId && !installationOctokit) {
-    const app = await agh();
-    installationOctokit = await app.getInstallationOctokit(installationId);
-    installationOctokitCache.set(installationId, installationOctokit);
-  }
-
-  const latestStats = await db
-    .select({ id: repoStats.id })
-    .from(repoStats)
-    .where(eq(repoStats.repoId, repoId))
-    .orderBy(desc(repoStats.analyzedAt))
-    .limit(1);
-
-  if (latestStats.length > 0) {
-    await db
-      .update(repoStats)
-      .set({
-        status: "analyzing",
-        lorc: 0,
-        counts: "{}",
-        callFn: 0,
-        callMethod: 0,
-        defVar: 0,
-      })
-      .where(eq(repoStats.id, latestStats[0].id));
-  } else {
-    let commitSha: string | undefined;
-    if (installationOctokit) {
-      const commits = await installationOctokit.request(
-        "GET /repos/{owner}/{repo}/commits",
-        {
-          owner,
-          repo: name,
-          per_page: 1,
-        },
+      const installation = await app.octokit.request(
+        "GET /users/{username}/installation",
+        { username: fallbackLogin },
       );
-      commitSha = commits.data[0]?.sha;
-    } else {
-      try {
-        const app = await agh();
-        const commits = await app.octokit.request(
-          "GET /repos/{owner}/{repo}/commits",
-          {
-            owner,
-            repo: name,
-            per_page: 1,
-          },
-        );
-        commitSha = commits.data[0]?.sha;
-      } catch {
-        // If we cannot read commit history (e.g. private repo without installation),
-        // still create an analyzing record so recount can proceed.
-        commitSha = `recount-${Date.now()}`;
-      }
+      installationId = installation.data.id;
+    } catch (fallbackError) {
+      if ((fallbackError as { status?: number }).status !== 404)
+        throw fallbackError;
     }
-
-    await db.insert(repoStats).values({
-      repoId,
-      commitSha: commitSha || `recount-${Date.now()}`,
-      status: "analyzing",
-      counts: "{}",
-    });
   }
-
-  await db
-    .update(repos)
-    .set({
-      status: "analyzing",
-      scanError: null,
-    })
-    .where(eq(repos.githubRepoId, repoId));
-
-  let installationToken = "";
-  if (installationId && installationOctokit) {
-    const authResult = (await installationOctokit.auth({
-      type: "installation",
-      installationId,
-    })) as { token: string };
-    installationToken = authResult.token;
-  }
-
-  const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${name}`)}`;
-  const matthewResp = await env.MATTHEW_VPC.fetch(
-    `${env.MATTHEW_URL}/api/count`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user: owner,
-        repo: name,
-        callback: callbackUrl,
-        token: installationToken === "" ? undefined : installationToken,
-        userInstallationToken,
-      }),
-    },
+  const octokit = installationId
+    ? await app.getInstallationOctokit(installationId)
+    : new Octokit();
+  const { data: commits } = await octokit.request(
+    "GET /repos/{owner}/{repo}/commits",
+    { owner, repo: name, per_page: 1 },
   );
-
-  if (!matthewResp.ok) {
-    console.log(matthewResp);
-    throw new Error(`Matthew API returned ${matthewResp.status}`);
-  }
+  const commitSha = commits[0]?.sha;
+  if (!commitSha) throw new Error("Repository has no commits");
+  await enqueueAnalysis(env, {
+    repoId,
+    owner,
+    name,
+    commitSha,
+    installationId,
+    force: true,
+  });
 }
 
 export async function recount(): Promise<RecountResult> {
@@ -230,19 +110,6 @@ export async function recount(): Promise<RecountResult> {
   }
   const db = await makeDb();
 
-  let userInstallationToken: string;
-  try {
-    userInstallationToken = await getCurrentUserInstallationToken(
-      session.user.login,
-    );
-  } catch (e) {
-    console.error("Failed to get current user installation token", e);
-    return {
-      ok: false,
-      error: "GitHub App is not installed for the current user",
-    };
-  }
-
   const userRepoRows = await db
     .select({
       repoId: repos.githubRepoId,
@@ -257,13 +124,6 @@ export async function recount(): Promise<RecountResult> {
     return { ok: true, total: 0, queued: 0, failed: 0 };
   }
 
-  const installationCache = new Map<string, number | null>();
-  const installationOctokitCache = new Map<
-    number,
-    Awaited<
-      ReturnType<Awaited<ReturnType<typeof agh>>["getInstallationOctokit"]>
-    >
-  >();
   let queued = 0;
   let failed = 0;
 
@@ -274,10 +134,7 @@ export async function recount(): Promise<RecountResult> {
         owner: repo.owner,
         name: repo.name,
         env,
-        db,
-        userInstallationToken,
-        installationCache,
-        installationOctokitCache,
+        fallbackLogin: session.user.login,
       });
 
       queued += 1;
@@ -336,19 +193,6 @@ export async function recountSingle(
   }
   const db = await makeDb();
 
-  let userInstallationToken: string;
-  try {
-    userInstallationToken = await getCurrentUserInstallationToken(
-      session.user.login,
-    );
-  } catch (e) {
-    console.error("Failed to get current user installation token", e);
-    return {
-      ok: false,
-      error: "GitHub App is not installed for the current user",
-    };
-  }
-
   const targetRepo = await db
     .select({
       repoId: repos.githubRepoId,
@@ -373,24 +217,13 @@ export async function recountSingle(
     };
   }
 
-  const installationCache = new Map<string, number | null>();
-  const installationOctokitCache = new Map<
-    number,
-    Awaited<
-      ReturnType<Awaited<ReturnType<typeof agh>>["getInstallationOctokit"]>
-    >
-  >();
-
   try {
     await queueRecountForRepo({
       repoId: targetRepo.repoId,
       owner: targetRepo.owner,
       name: targetRepo.name,
       env,
-      db,
-      userInstallationToken,
-      installationCache,
-      installationOctokitCache,
+      fallbackLogin: session.user.login,
     });
     return { ok: true, queued: true };
   } catch (e) {

@@ -26,7 +26,7 @@ export async function getRepoStats(
     .where(
       sql`${repoStats.repoId} = ${repoId} AND ${repoStats.status} = 'done'`,
     )
-    .orderBy(sql`${repoStats.analyzedAt} DESC`)
+    .orderBy(sql`${repoStats.requestedAt} DESC, ${repoStats.id} DESC`)
     .limit(1)
     .then((rows) => rows[0] ?? null);
 

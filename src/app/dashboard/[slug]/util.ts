@@ -28,7 +28,7 @@ export async function getUserRepos(
         repoId: repoStats.repoId,
         lorc: repoStats.lorc,
         analyzedAt: repoStats.analyzedAt,
-        rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${repoStats.repoId} ORDER BY ${repoStats.analyzedAt} DESC)`.as(
+        rn: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${repoStats.repoId} ORDER BY ${repoStats.requestedAt} DESC, ${repoStats.id} DESC)`.as(
           "rn",
         ),
       })

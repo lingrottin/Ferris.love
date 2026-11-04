@@ -44,10 +44,18 @@ function renderTemplate(template, vars) {
 
 function main() {
   const env = readEnv(envPath);
+  const imageLock = JSON.parse(fs.readFileSync(path.join(rootDir, "workers/counter/image.lock.json"), "utf8"));
+  env.MATTHEW_IMAGE ??= imageLock.image;
+  if (!/^registry\.cloudflare\.com\/[^\s]+@sha256:[a-f0-9]{64}$/.test(env.MATTHEW_IMAGE)) {
+    throw new Error("MATTHEW_IMAGE must be a digest-pinned Cloudflare Registry image");
+  }
   const template = fs.readFileSync(templatePath, "utf8");
   const rendered = renderTemplate(template, env);
 
   fs.writeFileSync(outputPath, rendered);
+  const counterDir = path.join(rootDir, "workers", "counter");
+  const counterTemplate = fs.readFileSync(path.join(counterDir, "wrangler.template.jsonc"), "utf8");
+  fs.writeFileSync(path.join(counterDir, "wrangler.jsonc"), renderTemplate(counterTemplate, env));
   console.log(`Generated ${path.relative(rootDir, outputPath)}`);
 }
 

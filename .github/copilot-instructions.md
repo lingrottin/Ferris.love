@@ -13,7 +13,7 @@
 | `pnpm run format` / `pnpm run lint:biome` | Format/lint code via **Biome** (the project's primary formatter and linter) |
 | `node scripts/build-config.js` | Generate `wrangler.jsonc` from `.env` + `wrangler.template.jsonc` |
 
-**No test suite** exists yet. `next lint` is the only validation step. No `turbo` or `nx` tooling.
+`pnpm check` checks TypeScript, `pnpm test:analysis` runs D1 migration/outbox/idempotency tests, and `pnpm build:worker` verifies the deployment bundle. No `turbo` or `nx` tooling.
 
 ## High-Level Architecture
 
@@ -22,8 +22,8 @@ This is a **Next.js 15** app (App Router) deployed to **Cloudflare Workers** via
 ### Data flow
 
 1. User authenticates via **GitHub App** (Auth.js / NextAuth v5 with D1 adapter).
-2. User adds a repository through the dashboard. The app registers a **GitHub webhook** on that repo and sends analysis jobs to **Matthew** — a separate Rust-based analysis service running on a VPS and accessible via Cloudflare Workers VPC.
-3. Matthew clones the repo, parses Rust code (custom AST walker), and POSTs results back to a **callback endpoint** (`/api/callback/matthew`) authenticated with HMAC-SHA256.
+2. User adds a repository through the dashboard. The app registers a **GitHub webhook** on that repo and records commit-pinned jobs and a D1 outbox, then publishes job IDs to **Cloudflare Queues**.
+3. The `ferris-counter` Queue consumer calls a per-job Durable Object. Its Cloudflare Container runs Matthew as a stdio CLI through native `ctx.container.exec()`. The consumer validates and writes results to D1 directly; the old callback returns 410.
 4. Results are stored in D1 databases and cached in KV. SVG badges are rendered server-side using `opentype.js` font metrics and `svgo` optimization, then cached in KV with 1-hour TTL.
 
 ### Cloudflare resources
@@ -34,7 +34,8 @@ This is a **Next.js 15** app (App Router) deployed to **Cloudflare Workers** via
 | D1 (Drizzle) | `DB` | App tables (users, repos, repo_stats, user_repos) |
 | KV | `KV` | Badge SVG cache, rate limiting, auth migration flag |
 | R2 | `R2` | Font files (Inter, Adwaita Mono) for badge rendering |
-| Workers VPC | `MATTHEW_VPC` | Internal communication with Matthew analysis service |
+| Queues | `ANALYSIS_QUEUE` | Analysis jobs, retries and DLQ |
+| Containers + Durable Objects | `MATTHEW` (Counter only) | Isolated stdio analysis and per-job deduplication |
 
 ### Directory structure
 
@@ -88,7 +89,7 @@ src/
 
 - All data mutations live in `src/app/actions/` as `"use server"` functions.
 - Actions handle their own auth check via `auth()` and rate limiting via KV.
-- Matthew analysis calls go through **Workers VPC** (service binding) — not HTTP over the public internet.
+- Analysis requests use `src/lib/analysis/jobs.ts` and commit the job/outbox atomically before Queue publication. The Counter owns task execution. Do not reintroduce VPC, shared Matthew tokens or HTTP callbacks.
 
 ### Styling & UI
 

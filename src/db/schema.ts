@@ -46,6 +46,7 @@ export const repos = sqliteTable(
     })
       .notNull()
       .default("queued"),
+    latestJobId: text("latest_job_id"),
     lastScanAt: integer("last_scan_at"),
     scanError: text("scan_error"),
     webhookSecret: text("webhook_secret"),
@@ -104,6 +105,10 @@ export const repoStats = sqliteTable(
       .default("analyzing"),
     lorc: integer("lorc").notNull().default(0),
     commitSha: text("commit_sha").notNull(),
+    jobId: text("job_id"),
+    requestedAt: integer("requested_at")
+      .notNull()
+      .$defaultFn(() => Date.now()),
     counts: text("counts").notNull().default("{}"),
     analyzedAt: integer("analyzed_at").$defaultFn(nowSeconds),
     callFn: integer("call_fn").notNull().default(0),
@@ -114,10 +119,48 @@ export const repoStats = sqliteTable(
     uniqueIndex("repo_commit_unique").on(table.repoId, table.commitSha),
     // 为按 analyzed_at DESC 查找最新 stat 加速
     index("idx_repo_stats_repo_analyzed_at").on(table.repoId, table.analyzedAt),
+    index("idx_repo_stats_requested").on(
+      table.repoId,
+      table.requestedAt,
+      table.id,
+    ),
     index("idx_repo_stats_status_repo_id_analyzed_at").on(
       table.status,
       table.repoId,
       table.analyzedAt,
+    ),
+  ],
+);
+
+export const analysisJobs = sqliteTable(
+  "analysis_jobs",
+  {
+    id: text("id").primaryKey(),
+    repoId: text("repo_id")
+      .notNull()
+      .references(() => repos.githubRepoId, { onDelete: "cascade" }),
+    statsId: text("stats_id")
+      .notNull()
+      .references(() => repoStats.id, { onDelete: "cascade" }),
+    owner: text("owner").notNull(),
+    name: text("name").notNull(),
+    commitSha: text("commit_sha").notNull(),
+    installationId: integer("installation_id"),
+    status: text("status", {
+      enum: ["queued", "running", "done", "failed", "cancelled"],
+    })
+      .notNull()
+      .default("queued"),
+    createdAt: integer("created_at").notNull(),
+    dispatchedAt: integer("dispatched_at"),
+    completedAt: integer("completed_at"),
+    error: text("error"),
+  },
+  (table) => [
+    index("idx_analysis_jobs_outbox").on(
+      table.status,
+      table.dispatchedAt,
+      table.createdAt,
     ),
   ],
 );

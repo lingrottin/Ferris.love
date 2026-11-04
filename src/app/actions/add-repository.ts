@@ -5,6 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { auth } from "@/auth";
 import { repoStats, repos, userRepos } from "@/db/schema";
 import { makeDb } from "@/db/util";
+import { enqueueAnalysis } from "@/lib/analysis/jobs";
 import { consumeRateLimit, formatRetryAfter } from "@/lib/rate-limit";
 import { agh } from "@/octokit";
 
@@ -199,10 +200,10 @@ export async function addRepository(
   }
 
   if (needsAnalysis) {
-    let webhookInstalled = false;
-    let webhookSecret: string | null = null;
+    let webhookInstalled = existingRepo[0]?.webhookInstalled ?? false;
+    let webhookSecret: string | null = existingRepo[0]?.webhookSecret ?? null;
 
-    if (hasOwnerInstallation && ownerOctokit) {
+    if (hasOwnerInstallation && ownerOctokit && !webhookInstalled) {
       const generatedSecret = crypto.randomUUID();
       try {
         await ownerOctokit.request("POST /repos/{owner}/{repo}/hooks", {
@@ -233,80 +234,17 @@ export async function addRepository(
       })
       .where(eq(repos.githubRepoId, githubRepoId));
 
-    await db.insert(repoStats).values({
-      repoId: githubRepoId,
-      commitSha,
-      status: "analyzing",
-      counts: "{}",
-    });
-
-    const callbackUrl = `${env.BASE_URL}/api/callback/matthew?repo=${encodeURIComponent(`${owner}/${repoName}`)}`;
-
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic body shape
-    const matthewBody: any = {
-      user: owner,
-      repo: repoName,
-      callback: callbackUrl,
-    };
-
-    if (hasOwnerInstallation && ownerOctokit && ownerInstallationId) {
-      try {
-        const authResult = (await ownerOctokit.auth({
-          type: "installation",
-          installationId: ownerInstallationId,
-        })) as { token: string };
-        matthewBody.token = authResult.token;
-      } catch (e) {
-        console.warn("Failed to get installation token:", e);
-      }
-    }
-
-    if (userInstallationId) {
-      try {
-        const authResult = (await app.octokit.auth({
-          type: "installation",
-          installationId: userInstallationId,
-        })) as { token: string };
-        matthewBody.userInstallationToken = authResult.token;
-      } catch (e) {
-        console.warn("Failed to get current user installation token:", e);
-      }
-    }
-
     try {
-      const matthewResponse = await env.MATTHEW_VPC.fetch(
-        `${env.MATTHEW_URL}/api/count`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${env.MATTHEW_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(matthewBody),
-        },
-      );
-      if (!matthewResponse.ok) {
-        console.error(
-          "Matthew API returned error:",
-          matthewResponse.status,
-          matthewResponse.statusText,
-        );
-        await db
-          .update(repoStats)
-          .set({ status: "error" })
-          .where(
-            and(
-              eq(repoStats.repoId, githubRepoId),
-              eq(repoStats.commitSha, commitSha),
-            ),
-          );
-        await db
-          .update(repos)
-          .set({ status: "failed" })
-          .where(eq(repos.githubRepoId, githubRepoId));
-      }
-    } catch (e) {
-      console.error("Matthew API call failed:", e);
+      await enqueueAnalysis(env, {
+        repoId: githubRepoId,
+        owner,
+        name: repoName,
+        commitSha,
+        installationId: ownerInstallationId ?? userInstallationId,
+      });
+    } catch (error) {
+      console.error("Could not persist analysis task", error);
+      return { ok: false, error: "Could not queue analysis" };
     }
   }
 

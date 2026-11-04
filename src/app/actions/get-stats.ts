@@ -30,9 +30,10 @@ export async function getStats(user: string): Promise<GetStatsResult> {
   const latestPerRepo = db
     .select({
       repoId: repoStats.repoId,
-      maxAnalyzedAt: sql<number>`MAX(${repoStats.analyzedAt})`.as(
-        "maxAnalyzedAt",
-      ),
+      latestKey:
+        sql<string>`MAX(printf('%020d', ${repoStats.requestedAt}) || ${repoStats.id})`.as(
+          "latestKey",
+        ),
     })
     .from(repoStats)
     .innerJoin(repos, eq(repoStats.repoId, repos.githubRepoId))
@@ -57,7 +58,7 @@ export async function getStats(user: string): Promise<GetStatsResult> {
       latestPerRepo,
       and(
         eq(repoStats.repoId, latestPerRepo.repoId),
-        eq(repoStats.analyzedAt, latestPerRepo.maxAnalyzedAt),
+        sql`printf('%020d', ${repoStats.requestedAt}) || ${repoStats.id} = ${latestPerRepo.latestKey}`,
       ),
     )
     .where(eq(repoStats.status, "done"))
@@ -114,9 +115,10 @@ export async function getStatsWithoutRepo(
   const latestPerRepo = db
     .select({
       repoId: repoStats.repoId,
-      maxAnalyzedAt: sql<number>`MAX(${repoStats.analyzedAt})`.as(
-        "maxAnalyzedAt",
-      ),
+      latestKey:
+        sql<string>`MAX(printf('%020d', ${repoStats.requestedAt}) || ${repoStats.id})`.as(
+          "latestKey",
+        ),
     })
     .from(repoStats)
     .innerJoin(repos, eq(repoStats.repoId, repos.githubRepoId))
@@ -141,7 +143,7 @@ export async function getStatsWithoutRepo(
       latestPerRepo,
       and(
         eq(repoStats.repoId, latestPerRepo.repoId),
-        eq(repoStats.analyzedAt, latestPerRepo.maxAnalyzedAt),
+        sql`printf('%020d', ${repoStats.requestedAt}) || ${repoStats.id} = ${latestPerRepo.latestKey}`,
       ),
     )
     .where(eq(repoStats.status, "done"))

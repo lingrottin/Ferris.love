@@ -88,7 +88,7 @@ export async function GET(
         eq(repoStats.status, "done"),
       ),
     )
-    .orderBy(desc(repoStats.analyzedAt))
+    .orderBy(desc(repoStats.requestedAt), desc(repoStats.id))
     .limit(1);
 
   if (stats.length === 0) {
@@ -128,14 +128,14 @@ export async function GET(
     env,
     owner,
     repoName,
-    stat.analyzedAt ?? 0,
+    stat.jobId ?? stat.analyzedAt ?? 0,
   ).catch(() => null);
   const cacheKey = getRepoBadgeKey({
     owner,
     repo: repoName,
     variant,
     show: showKeyString,
-    analyzedAt: stat.analyzedAt ?? 0,
+    analyzedAt: stat.jobId ?? stat.analyzedAt ?? 0,
   });
   await putCachedSvg(env, cacheKey, svg).catch(() => null);
 

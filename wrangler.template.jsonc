@@ -19,10 +19,10 @@
   "observability": {
     "enabled": true
   },
+  "secrets": { "required": ["AUTH_SECRET", "AUTH_GITHUB_SECRET", "GITHUB_APP_PRIVATE_KEY"] },
   "vars": {
     "GITHUB_APP_NAME": "{{GITHUB_APP_NAME}}",
     "GITHUB_APP_ID": "{{GITHUB_APP_ID}}",
-    "MATTHEW_URL": "{{MATTHEW_URL}}",
     "AUTH_URL": "{{AUTH_URL}}",
     "AUTH_TRUST_HOST": "true",
     "BASE_URL": "{{BASE_URL}}",
@@ -64,13 +64,9 @@
       "bucket_name": "ferris-love"
     }
   ],
-  "vpc_services": [
-    {
-      "binding": "MATTHEW_VPC",
-      "service_id": "{{MATTHEW_VPC_ID}}",
-      "remote": true
-    }
-  ]
+  "queues": {
+    "producers": [{ "binding": "ANALYSIS_QUEUE", "queue": "ferris-analysis" }]
+  }
   /**
    * Environment Variables
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables

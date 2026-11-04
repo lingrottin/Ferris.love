@@ -1,0 +1,90 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "ferris-counter",
+  "main": "index.ts",
+  "compatibility_date": "2026-11-04",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "GITHUB_APP_ID": "{{GITHUB_APP_ID}}"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "db_drizzle",
+      "database_id": "{{DRIZZLE_DB_ID}}",
+      "migrations_dir": "../../drizzle"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "{{KV_ID}}"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "ANALYSIS_QUEUE",
+        "queue": "ferris-analysis"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "ferris-analysis",
+        "max_batch_size": 1,
+        "max_batch_timeout": 1,
+        "max_concurrency": 4,
+        "max_retries": 3,
+        "dead_letter_queue": "ferris-analysis-dlq"
+      },
+      {
+        "queue": "ferris-analysis-dlq",
+        "max_batch_size": 1,
+        "max_concurrency": 1,
+        "max_retries": 10
+      }
+    ]
+  },
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "containers": [
+    {
+      "class_name": "MatthewContainer",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "matthew": {
+          "image": "{{MATTHEW_IMAGE}}"
+        }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MATTHEW",
+        "class_name": "MatthewContainer"
+      }
+    ]
+  },
+  "exports": {
+    "MatthewContainer": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "secrets": {
+    "required": [
+      "GITHUB_APP_PRIVATE_KEY"
+    ]
+  }
+}

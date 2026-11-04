@@ -56,7 +56,7 @@ export async function setRepoLatestAnalyzedAt(
   env: CloudflareEnv,
   owner: string,
   repo: string,
-  analyzedAt: number,
+  analyzedAt: number | string,
 ): Promise<void> {
   await env.KV.put(getRepoLatestKey(owner, repo), String(analyzedAt));
 }
@@ -75,7 +75,7 @@ export async function getUserLatestAnalyzedAt(
 export async function setUserLatestAnalyzedAt(
   env: CloudflareEnv,
   user: string,
-  analyzedAt: number,
+  analyzedAt: number | string,
 ): Promise<void> {
   await env.KV.put(getUserLatestKey(user), String(analyzedAt));
 }
