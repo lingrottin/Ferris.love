@@ -4,6 +4,7 @@ import GitHub from "next-auth/providers/github";
 const authConfig = {
   providers: [
     GitHub({
+      issuer: "https://github.com/login/oauth",
       profile(profile) {
         return {
           id: String(profile.id),
