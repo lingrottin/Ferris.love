@@ -19,7 +19,9 @@
   "observability": {
     "enabled": true
   },
-  "secrets": { "required": ["AUTH_SECRET", "AUTH_GITHUB_SECRET", "GITHUB_APP_PRIVATE_KEY"] },
+  "secrets": {
+    "required": ["AUTH_SECRET", "AUTH_GITHUB_SECRET", "GITHUB_APP_PRIVATE_KEY"]
+  },
   "vars": {
     "GITHUB_APP_NAME": "{{GITHUB_APP_NAME}}",
     "GITHUB_APP_ID": "{{GITHUB_APP_ID}}",

@@ -3,9 +3,7 @@
   "name": "ferris-counter",
   "main": "index.ts",
   "compatibility_date": "2026-11-04",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "observability": {
     "enabled": true,
@@ -53,9 +51,7 @@
     ]
   },
   "triggers": {
-    "crons": [
-      "* * * * *"
-    ]
+    "crons": ["* * * * *"]
   },
   "containers": [
     {
@@ -83,8 +79,6 @@
     }
   },
   "secrets": {
-    "required": [
-      "GITHUB_APP_PRIVATE_KEY"
-    ]
+    "required": ["GITHUB_APP_PRIVATE_KEY"]
   }
 }
