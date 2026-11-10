@@ -1,5 +1,13 @@
 # Ferris.love
 
+Ferris.love counts your Rust code and generates badges for you. Show how you love Ferris!
+
+⬇️ Metric of [Matthew](https://github.com/lingrottin/matthew), Ferris.love's counting backend service.
+
+[![Ferris.love badge](https://ferris.love/badge/lingrottin/matthew?show=call_fn%2Cdef_fn%2Cdef_struct%2Cdef_method%2Cdef_trait)](https://ferris.love/lingrottin/matthew)
+
+<details>
+<summary>some ugly AI-generated instructions, you probably do not want to read this</summary>
 Ferris.love analyzes Rust repositories on Cloudflare. The web Worker records an immutable commit SHA and a D1 outbox entry, then sends a job ID to Cloudflare Queues. The `ferris-counter` consumer runs Matthew in a Container through `ctx.container.exec()` with JSON stdin/stdout. Results go directly to D1; no VPS, Tunnel, VPC service, HTTP analysis server, or callback secret is required.
 
 ## Development and deployment
@@ -96,3 +104,5 @@ For local development, put runtime variables/secrets in `.dev.vars`, run `pnpm d
 - `/api/callback/matthew` returns `410`. Old analyses in progress at cutover must be recounted from the dashboard. Historical completed stats remain available.
 
 Matthew validates snapshot size through the Git Trees API for the pinned SHA, sums every blob path, and falls back to non-recursive traversal when GitHub truncates a recursive response. It fetches only that commit at depth one and skips LFS smudging, submodules and symlink targets. See [Matthew's stdio protocol](https://github.com/lingrottin/matthew/blob/main/app/API.md).
+
+</details>
