@@ -1,8 +1,8 @@
-# Ferris.love
+# [Ferris.love](https://ferris.love)
 
-Ferris.love counts your Rust code and generates badges for you. Show how you love Ferris!
+[Ferris.love](https://ferris.love) counts your Rust code and generates badges for you. Show how you love [Ferris](https://rustacean.net/)!
 
-⬇️ Metric of [Matthew](https://github.com/lingrottin/matthew), Ferris.love's counting backend service.
+⬇️ Metric of [Matthew](https://github.com/lingrottin/matthew), [Ferris.love](https://ferris.love)'s counting backend service.
 
 [![Ferris.love badge](https://ferris.love/badge/lingrottin/matthew?show=call_fn%2Cdef_fn%2Cdef_struct%2Cdef_method%2Cdef_trait)](https://ferris.love/lingrottin/matthew)
 
