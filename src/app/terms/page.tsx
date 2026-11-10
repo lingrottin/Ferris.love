@@ -8,7 +8,7 @@ export default async function Terms() {
       <div className="flex flex-col md:ml-15 md:mr-15 xl:ml-50 xl:mr-50 ml-10 mr-10 mt-10 gap-5">
         <h1 className={"text-3xl font-bold"}>Terms of Service</h1>
         <div className={"-mt-2 text-muted-foreground"}>
-          Last updated on: April 1, 2026
+          Last updated on: November 10, 2026
         </div>
         <div className={"border-b"}></div>
         <div className={"article"}>
@@ -148,10 +148,16 @@ export default async function Terms() {
           </p>
           <h3 id="third‑party-services">6. Third‑Party Services</h3>
           <p>
-            Ferris.love depends on third‑party services such as GitHub and cloud
-            infrastructure providers. Your use of those services may be governed
-            by separate terms and policies, which you are responsible for
-            reviewing.
+            The Service runs entirely on Cloudflare’s platform, including its
+            hosting, storage, queues, and the Cloudflare Container in which
+            repository analysis (by our backend, Matthew) is performed. Apart
+            from Cloudflare, the Service relies on GitHub for authentication,
+            repository access, and code fetching. The Service does not depend
+            on any additional third-party hosting or analysis servers.
+          </p>
+          <p>
+            Your use of those services may be governed by separate terms and
+            policies, which you are responsible for reviewing.
           </p>
           <p>
             We are not responsible for the availability, performance, or actions

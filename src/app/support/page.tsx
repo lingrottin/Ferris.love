@@ -16,14 +16,11 @@ export default async function Privacy() {
           <h2>Getting support</h2>
           <p>
             If you encountered problems, you can contact us by e-mail at{" "}
-            <Link href="mailto:support@ferris.love">support@ferris.love</Link>{" "}
-            or throught the "Chat with us" button on the bottom-right corner.
+            <Link href="mailto:support@ferris.love">support@ferris.love</Link>.
             You will be replied within 48 hours.
           </p>
         </div>
       </div>
-      {/* @ts-ignore */}
-      <Script src="https://fw-cdn.com/16037016/7039039.js" chat="true"></Script>
     </>
   );
 }

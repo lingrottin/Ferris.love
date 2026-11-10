@@ -8,7 +8,7 @@ export default async function Privacy() {
       <div className="flex flex-col md:ml-15 md:mr-15 xl:ml-50 xl:mr-50 ml-10 mr-10 mt-10 gap-5">
         <h1 className={"text-3xl font-bold"}>Privacy Policy</h1>
         <div className={"-mt-2 text-muted-foreground"}>
-          Last updated on: April 1, 2026
+          Last updated on: November 10, 2026
         </div>
         <div className={"border-b"}></div>
         <div className={"article"}>
@@ -120,9 +120,10 @@ export default async function Privacy() {
           </p>
           <h2 id="data-storage-and-retention">4. Data Storage and Retention</h2>
           <p>
-            We store data using third‑party infrastructure providers (such as
-            cloud platforms and databases). Data may be stored in various
-            regions depending on the infrastructure provider.
+            We store data on Cloudflare infrastructure (including Workers,
+            Durable Objects, Queues, D1 databases, KV, and R2). Data is
+            replicated across Cloudflare’s global network, so it may be stored
+            and processed in various regions.
           </p>
           <p>We retain:</p>
           <ul>
@@ -156,17 +157,26 @@ export default async function Privacy() {
           </p>
           <h2 id="third‑party-services">6. Third‑Party Services</h2>
           <p>
-            Ferris.love integrates with third‑party services, including but not
-            limited to:
+            Ferris.love runs entirely on Cloudflare’s platform, and the service
+            itself does not rely on additional third‑party hosting or analytics
+            providers. The services we integrate with are:
           </p>
           <ul>
-            <li>GitHub (for authentication and repository access)</li>
-            <li>Cloudflare (for hosting the service and stroing metrics)</li>
             <li>
-              Other cloud infrastructure providers (for processing the
-              repositories)
+              GitHub (for authentication, repository access, and fetching the
+              code we analyze)
+            </li>
+            <li>
+              Cloudflare (for hosting the Service and for all storage, queues,
+              and compute, including running our analysis backend, Matthew, in
+              a Cloudflare Container)
             </li>
           </ul>
+          <p>
+            Repository analysis happens inside a transient Cloudflare Container
+            that fetches only the specific commit being counted via GitHub
+            APIs; no separate third‑party analysis server is involved.
+          </p>
           <p>
             These third parties may collect or receive information as described
             in their own privacy policies. We do not control and are not
